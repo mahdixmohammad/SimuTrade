@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+	.candlestickButton {
+		@apply w-32 h-12 text-black font-medium text-2xl rounded-lg hover:scale-110 duration-200;
+	}
+}
