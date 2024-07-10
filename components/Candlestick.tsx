@@ -1,5 +1,8 @@
 function Candlestick(props: {
 	color: "red" | "green";
+	bodySize: number;
+	topwickSize: number;
+	bottomwickSize: number;
 	xPosition: number;
 	yPosition: number;
 }) {
@@ -8,19 +11,32 @@ function Candlestick(props: {
 		// left: `${40 * props.xPosition}px`,
 	};
 
-	const candleColor = {
+	const candleTopWickStyle = {
+		height: props.topwickSize,
+		backgroundColor:
+			props.color === "green" ? "rgb(0, 167, 114)" : "rgb(255, 50, 50)",
+	};
+
+	const candleBodyStyle = {
+		height: props.bodySize,
+		backgroundColor:
+			props.color === "green" ? "rgb(0, 167, 114)" : "rgb(255, 50, 50)",
+	};
+
+	const candleBottomWickStyle = {
+		height: props.bottomwickSize,
 		backgroundColor:
 			props.color === "green" ? "rgb(0, 167, 114)" : "rgb(255, 50, 50)",
 	};
 
 	return (
 		<div
-			className="w-fit h-fit flex flex-col items-center relative"
+			className="w-fit h-fit flex flex-col items-center relative my-96"
 			style={candlePosition}
 		>
-			<div className="w-1 h-10" style={candleColor}></div>
-			<div className="candle-body w-10 h-24" style={candleColor}></div>
-			<div className="w-1 h-10" style={candleColor}></div>
+			<div className="w-1" style={candleTopWickStyle}></div>
+			<div className="w-10" style={candleBodyStyle}></div>
+			<div className="w-1" style={candleBottomWickStyle}></div>
 		</div>
 	);
 }
