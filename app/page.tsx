@@ -3,7 +3,7 @@ import Candlestick from "@/components/Candlestick";
 import React, { useState, useEffect, useRef } from "react";
 
 export default function Home() {
-	const [val, setVal] = useState<any[]>([]); // an array of candlesticks to be rendered on the screen
+	const [val, setVal] = useState<undefined[]>([]); // an array of candlesticks to be rendered on the screen
 	const [count, setCount] = useState(0); // the number of candlesticks
 	const [colors, setColors] = useState(new Map()); // a map of all candles and their respective colors
 	const [bodySizes, setBodies] = useState(new Map()); // a map of all candles and their respective body sizes
@@ -12,14 +12,15 @@ export default function Home() {
 	const [positions, setPositions] = useState(new Map()); // a map of all candles and their respective positions
 	const [offset, setOffset] = useState(0); // how much to offset each candle positioning by (so that everything is in view)
 	const reference = useRef<any>(null); // getting a reference of the canvas (graph element)
+	const canvasSize = useRef<any>(null); // getting a reference of the canvas (graph element)
 
 	const handleAdd = () => {
 		function getRandomInt(min: number, max: number) {
 			return Math.floor(Math.random() * (max - min + 1)) + min;
 		}
-		const randomBodySize = getRandomInt(50, 300);
-		const randomTopWickSize = getRandomInt(0, 80);
-		const randomBottomWickSize = getRandomInt(0, 50);
+		const randomBodySize = getRandomInt(50, 400);
+		const randomTopWickSize = getRandomInt(0, 120);
+		const randomBottomWickSize = getRandomInt(0, 120);
 		const upOrDown = Math.floor(Math.random() * 2); // calculates an integer that is either 0 or 1
 		const color = upOrDown ? "green" : "red";
 		let yPosition = 0;
@@ -39,10 +40,6 @@ export default function Home() {
 				yPosition += prev + oldTopWick - randomTopWickSize + oldBody;
 				if (colors.get(count - 1) == "green") yPosition -= oldBody;
 			}
-
-			// if (color === "red") {
-			// 	setOffset(offset - randomBodySize);
-			// }
 			if (color === "green") {
 				setOffset(offset + randomBodySize);
 			}
@@ -70,13 +67,23 @@ export default function Home() {
 	};
 
 	useEffect(() => {
+		let startX: number;
+		let startY: number;
+		let scrollTop: number;
+		let scrollLeft: number;
+		let isDown: boolean;
+
+		const scrollThreshold = 3000; // Adjust as needed
+		let currentCanvasHeight = 600;
+
 		const handleScroll = (e: any) => {
-			const zoomStep = 0.05; // Adjust this as needed
+			e.preventDefault();
+			const zoomStep = 0.05;
 			const currentZoom = parseFloat(reference.current.style.zoom || "1");
 			const newZoom =
 				e.deltaY > 0 ? currentZoom - zoomStep : currentZoom + zoomStep;
 
-			// Limit zoom range (minimum 5%, maximum 200%)
+			// Limit zoom range (minimum 20%, maximum 200%)
 			const minZoom = 0.2;
 			const maxZoom = 2.0;
 			const clampedZoom = Math.min(Math.max(newZoom, minZoom), maxZoom);
@@ -97,15 +104,50 @@ export default function Home() {
 		};
 
 		reference.current.addEventListener("wheel", handleScroll);
-		reference.current.addEventListener("mouseenter", (e: any) => {
+		reference.current.addEventListener("mouseenter", () => {
 			let x = window.scrollX;
 			let y = window.scrollY;
 			window.onscroll = function () {
 				window.scrollTo(x, y);
 			};
 		});
-		reference.current.addEventListener("mouseleave", (e: any) => {
+		reference.current.addEventListener("mouseleave", () => {
 			window.onscroll = function () {};
+		});
+
+		reference.current.addEventListener("mousedown", (e: any) => {
+			e.preventDefault();
+			isDown = true;
+			startX = e.pageX - reference.current.offsetLeft;
+			startY = e.pageY - reference.current.offsetTop;
+			scrollLeft = reference.current.scrollLeft;
+			scrollTop = reference.current.scrollTop;
+		});
+		reference.current.addEventListener("mouseup", () => (isDown = false));
+		reference.current.addEventListener(
+			"mouseleave",
+			() => (isDown = false)
+		);
+		reference.current.addEventListener("mousemove", (e: any) => {
+			if (isDown) {
+				const x = e.pageX - reference.current.offsetLeft;
+				const y = e.pageY - reference.current.offsetTop;
+				const walkX = (x - startX) * 5;
+				const walkY = (y - startY) * 5;
+				reference.current.scrollLeft = scrollLeft - walkX;
+				reference.current.scrollTop = scrollTop - walkY;
+			}
+
+			const totalHeight = reference.current.scrollHeight;
+
+			if (
+				scrollTop + window.innerHeight >=
+				totalHeight - scrollThreshold
+			) {
+				// User has scrolled to the bottom
+				currentCanvasHeight += 100;
+				canvasSize.current.style.height = `${currentCanvasHeight}px`;
+			}
 		});
 	}, []);
 
@@ -114,8 +156,9 @@ export default function Home() {
 			<h1 className="text-white text-5xl font-black my-10">SimuTrade</h1>
 			<div
 				ref={reference}
-				className="top-8 left-0 flex bg-white h-[600px] w-11/12 overflow-auto my-8 mx-auto px-10"
+				className="top-8 left-0 flex bg-white h-[600px] w-11/12 overflow-auto my-8 mx-auto px-96 scrollbar-hide"
 			>
+				<div ref={canvasSize}></div>
 				{val.map((_: any, i: any) => {
 					return (
 						<Candlestick

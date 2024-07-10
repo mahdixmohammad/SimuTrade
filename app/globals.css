@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer utilities {
+	.scrollbar-hide {
+		scrollbar-width: none;
+	}
 	.candlestickButton {
 		@apply w-32 h-12 text-black font-medium text-2xl rounded-lg hover:scale-110 duration-200;
 	}
