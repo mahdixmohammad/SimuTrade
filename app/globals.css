@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 @layer utilities {
+	body {
+		overflow-x: hidden;
+	}
+	.test {
+		width: 5px !important;
+	}
 	.scrollbar-hide {
 		scrollbar-width: none;
 	}

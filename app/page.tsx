@@ -12,10 +12,12 @@ export default function Home() {
 	const [bottomwickSizes, setBottomWicks] = useState(new Map()); // a map of all candles and their respective wick sizes
 	const [positions, setPositions] = useState(new Map()); // a map of all candles and their respective positions
 	const [offset, setOffset] = useState(0); // how much to offset each candle positioning by (so that everything is in view)
-	const reference = useRef<any>(null); // getting a reference of the canvas (graph element)
-	const canvasSize = useRef<any>(null); // getting a reference of the canvas (graph element)
 	const [fastforwarding, setForwarding] = useState(false);
 	const [fastBackwarding, setBackwarding] = useState(false);
+	const reference = useRef<any>(null); // getting a reference of the canvas (graph element)
+	const canvasSize = useRef<any>(null); // getting a reference of the canvas (graph element)
+	const verticalLine = useRef<any>(null);
+	const horizontalLine = useRef<any>(null);
 
 	const handleAdd = useCallback(() => {
 		function getRandomInt(min: number, max: number) {
@@ -35,10 +37,8 @@ export default function Home() {
 			const oldTopWick = topwickSizes.get(count - 1);
 			const oldBody = bodySizes.get(count - 1);
 			if (upOrDown) {
-				yPosition +=
-					prev + oldTopWick - randomTopWickSize - randomBodySize;
-				if (colors.get(count - 1) == "red")
-					yPosition += randomBodySize + (oldBody - randomBodySize);
+				yPosition += prev + oldTopWick - randomTopWickSize - randomBodySize;
+				if (colors.get(count - 1) == "red") yPosition += randomBodySize + (oldBody - randomBodySize);
 			} else {
 				yPosition += prev + oldTopWick - randomTopWickSize + oldBody;
 				if (colors.get(count - 1) == "green") yPosition -= oldBody;
@@ -48,16 +48,11 @@ export default function Home() {
 			}
 		}
 		// scroll to position where new candle was created
-		reference.current.scrollTo(
-			reference.current.scrollWidth,
-			yPosition + offset
-		);
+		reference.current.scrollTo(reference.current.scrollWidth, yPosition + offset);
 		setColors(prevMap => new Map(prevMap.set(count, color)));
 		setBodies(prevMap => new Map(prevMap.set(count, randomBodySize)));
 		setTopWicks(prevMap => new Map(prevMap.set(count, randomTopWickSize)));
-		setBottomWicks(
-			prevMap => new Map(prevMap.set(count, randomBottomWickSize))
-		);
+		setBottomWicks(prevMap => new Map(prevMap.set(count, randomBottomWickSize)));
 		setPositions(prevMap => new Map(prevMap.set(count, yPosition)));
 		setCount(count + 1);
 		setVal([...val, undefined]);
@@ -93,15 +88,7 @@ export default function Home() {
 		} else {
 			setBackwarding(false);
 		}
-	}, [
-		val,
-		count,
-		colors,
-		bodySizes,
-		topwickSizes,
-		bottomwickSizes,
-		positions,
-	]);
+	}, [val, count, colors, bodySizes, topwickSizes, bottomwickSizes, positions]);
 
 	useEffect(() => {
 		let startX: number;
@@ -117,8 +104,7 @@ export default function Home() {
 			e.preventDefault();
 			const zoomStep = 0.05;
 			const currentZoom = parseFloat(reference.current.style.zoom || "1");
-			const newZoom =
-				e.deltaY > 0 ? currentZoom - zoomStep : currentZoom + zoomStep;
+			const newZoom = e.deltaY > 0 ? currentZoom - zoomStep : currentZoom + zoomStep;
 
 			// Limit zoom range (minimum 20%, maximum 200%)
 			const minZoom = 0.1;
@@ -139,17 +125,43 @@ export default function Home() {
 			reference.current.style.marginTop = `${0}px`;
 			reference.current.style.marginBottom = `${0}px`;
 		};
+		const handleMouseMove = (e: any) => {
+			// Update vertical and horizontal lines
+			const currentZoom = parseFloat(reference.current.style.zoom || "1");
+
+			const canvasWidth = reference.current.offsetWidth / (1 / currentZoom);
+			horizontalLine.current.style.width = `${canvasWidth}px`;
+			const canvasLeft = reference.current.getBoundingClientRect().left / (1 / currentZoom);
+			horizontalLine.current.style.left = `${canvasLeft}px`;
+
+			const canvasHeight = reference.current.offsetheight / (1 / currentZoom);
+			verticalLine.current.style.height = `${canvasHeight}px`;
+			const canvasTop = reference.current.getBoundingClientRect().top / (1 / currentZoom) + window.scrollY;
+			verticalLine.current.style.top = `${canvasTop}px`;
+
+			// Update vertical and horizontal lines to follow user's cursor in the window
+			const xPosition = e.pageX;
+			verticalLine.current.style.left = `${xPosition}px`;
+			const yPosition = e.pageY;
+			horizontalLine.current.style.top = `${yPosition}px`;
+		};
 
 		reference.current.addEventListener("wheel", handleScroll);
-		reference.current.addEventListener("mouseenter", () => {
+		reference.current.addEventListener("mouseenter", (e: any) => {
 			let x = window.scrollX;
 			let y = window.scrollY;
 			window.onscroll = function () {
 				window.scrollTo(x, y);
 			};
+			horizontalLine.current.style.display = "block";
+			verticalLine.current.style.display = "block";
+			handleMouseMove(e);
 		});
+
 		reference.current.addEventListener("mouseleave", () => {
 			window.onscroll = function () {};
+			horizontalLine.current.style.display = "none";
+			verticalLine.current.style.display = "none";
 		});
 
 		reference.current.addEventListener("mousedown", (e: any) => {
@@ -161,10 +173,7 @@ export default function Home() {
 			scrollTop = reference.current.scrollTop;
 		});
 		reference.current.addEventListener("mouseup", () => (isDown = false));
-		reference.current.addEventListener(
-			"mouseleave",
-			() => (isDown = false)
-		);
+		reference.current.addEventListener("mouseleave", () => (isDown = false));
 		reference.current.addEventListener("mousemove", (e: any) => {
 			if (isDown) {
 				const x = e.pageX - reference.current.offsetLeft;
@@ -177,14 +186,12 @@ export default function Home() {
 
 			const totalHeight = reference.current.scrollHeight;
 
-			if (
-				scrollTop + window.innerHeight >=
-				totalHeight - scrollThreshold
-			) {
+			if (scrollTop + window.innerHeight >= totalHeight - scrollThreshold) {
 				// User has scrolled to the bottom
 				currentCanvasHeight += 100;
 				canvasSize.current.style.height = `${currentCanvasHeight}px`;
 			}
+			handleMouseMove(e);
 		});
 
 		let addTimer: any;
@@ -201,6 +208,7 @@ export default function Home() {
 			clearInterval(addTimer); // Cleanup: clear the interval when component unmounts
 			clearInterval(deleteTimer); // Cleanup: clear the interval when component unmounts
 			reference.current.removeEventListener("wheel", handleScroll);
+			reference.current.removeEventListener("mousemove", handleMouseMove);
 		};
 	}, [fastforwarding, fastBackwarding, handleAdd, handleDelete]);
 
@@ -208,10 +216,21 @@ export default function Home() {
 		<main className="min-h-screen max-w-screen py-1 bg-black text-center">
 			<h1 className="text-white text-5xl font-black my-10">SimuTrade</h1>
 			<div
+				ref={verticalLine}
+				className="absolute h-[600px] top-[132px] border-l-2 border-dotted border-black pointer-events-none"
+				style={{ display: "none" }}
+			></div>
+			<div
+				ref={horizontalLine}
+				className="absolute w-[995px] left-[46px] border-t-2 border-dotted border-black pointer-events-none"
+				style={{ display: "none" }}
+			></div>
+			<div
 				ref={reference}
-				className="top-8 left-0 flex bg-white h-[600px] w-11/12 overflow-auto my-8 mx-auto px-96 scrollbar-hide"
+				className="top-8 left-0 flex bg-white h-[600px] w-11/12 overflow-auto my-8 mx-auto px-96 scrollbar-hide cursor-crosshair"
 			>
 				<div ref={canvasSize}></div>
+
 				{val.map((_: any, i: any) => {
 					return (
 						<Candlestick
@@ -226,14 +245,15 @@ export default function Home() {
 					);
 				})}
 			</div>
-			<div className="flex justify-center items-center gap-6 mx-auto bg-gray-900 w-[500px] h-24 my-8 rounded-2xl border-2 border-gray-600">
+			<div className="flex justify-center items-center gap-6 mx-auto bg-gray-900 w-[450px] h-20 my-8 rounded-2xl border-2 border-gray-700">
 				<Image
 					className="mx-8 cursor-pointer"
 					src="/fastbackward-icon.png"
 					alt="Fast Backward"
 					title="Fast Backward"
-					width={60}
-					height={50}
+					width={50}
+					height={0}
+					style={{ height: "auto" }}
 					onClick={() => {
 						setForwarding(false);
 						setBackwarding(true);
@@ -244,8 +264,9 @@ export default function Home() {
 					src="/backward-icon.png"
 					alt="Backward"
 					title="Backward"
-					width={43.75}
-					height={50}
+					width={35}
+					height={0}
+					style={{ height: "auto" }}
 					onClick={handleDelete}
 				></Image>
 				{fastforwarding || fastBackwarding ? (
@@ -254,8 +275,9 @@ export default function Home() {
 						src="/pause-icon.png"
 						alt="Pause"
 						title="Pause"
-						width={43.75}
-						height={50}
+						width={35}
+						height={0}
+						style={{ height: "auto" }}
 						onClick={() => {
 							setForwarding(false);
 							setBackwarding(false);
@@ -267,8 +289,9 @@ export default function Home() {
 						src="/play-icon.png"
 						alt="Play"
 						title="Play"
-						width={43.75}
-						height={50}
+						width={35}
+						height={0}
+						style={{ height: "auto" }}
 					></Image>
 				)}
 				<Image
@@ -276,8 +299,9 @@ export default function Home() {
 					src="/forward-icon.png"
 					alt="Forward"
 					title="Forward"
-					width={43.75}
-					height={50}
+					width={35}
+					height={0}
+					style={{ height: "auto" }}
 					onClick={handleAdd}
 				></Image>
 				<Image
@@ -285,8 +309,9 @@ export default function Home() {
 					src="/fastforward-icon.png"
 					alt="Fast Forward"
 					title="Fast Forward"
-					width={60}
-					height={50}
+					width={50}
+					height={0}
+					style={{ height: "auto" }}
 					onClick={() => {
 						setForwarding(true);
 						setBackwarding(false);
