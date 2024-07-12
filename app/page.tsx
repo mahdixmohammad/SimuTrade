@@ -293,15 +293,15 @@ export default function Home() {
 			canvas.current.removeEventListener("wheel", handleScroll);
 			canvas.current.removeEventListener("mousemove", handleMouseMove);
 		};
-	}, [offset, fastforwarding, fastBackwarding, handleAdd, handleDelete]);
+	}, [initialDate, initialPrice, offset, fastforwarding, fastBackwarding, handleAdd, handleDelete]);
 
 	return (
-		<main className="min-h-screen max-w-screen py-1 bg-black text-center">
-			<h1 className="text-white text-5xl font-black my-10">SimuTrade</h1>
+		<main className="min-h-screen max-w-screen py-1 bg-black text-center font-custom">
+			<h1 className="text-white text-5xl font-medium my-10">SimuTrade</h1>
 			{/* Vertical and Horizontal crosshairs on canvas */}
 			<div
 				ref={verticalLine}
-				className="z-50 absolute h-[600px] top-[132px] border-l-2 border-dotted border-black pointer-events-none"
+				className="z-50 absolute h-[600px] top-[132px] border-l-2 border-dotted border-white pointer-events-none"
 				style={{ display: "none" }}
 			>
 				<div ref={xAxis} className="z-40 absolute h-12 w-24 bottom-0 left-[-48px] bg-gray-500 flex justify-center items-center text-white">
@@ -310,14 +310,17 @@ export default function Home() {
 			</div>
 			<div
 				ref={horizontalLine}
-				className="z-40 absolute w-[995px] left-[46px] border-t-2 border-dotted border-black pointer-events-none"
+				className="z-40 absolute w-[995px] left-[46px] border-t-2 border-dotted border-white pointer-events-none"
 				style={{ display: "none" }}
 			>
 				<div ref={yAxis} className="z-40 absolute h-12 w-24 top-[-24px] right-0 bg-gray-500 flex justify-center items-center text-white">
 					{currentPrice.toFixed(2)}
 				</div>
 			</div>
-			<div ref={canvas} className="top-8 left-0 flex bg-white h-[600px] w-11/12 overflow-auto my-8 mx-auto scrollbar-hide cursor-crosshair">
+			<div
+				ref={canvas}
+				className="top-8 left-0 flex bg-gray-900 h-[600px] w-11/12 overflow-auto my-8 mx-auto scrollbar-hide cursor-crosshair border-2 border-white"
+			>
 				<div ref={canvasSize}></div>
 
 				{val.map((_: any, i: any) => {
@@ -335,9 +338,9 @@ export default function Home() {
 					);
 				})}
 			</div>
-			<div className="flex justify-center items-center gap-6 mx-auto bg-gray-900 w-[450px] h-20 my-8 rounded-2xl border-2 border-gray-700">
+			<div className="flex justify-center items-center gap-4 md:gap-6 mx-auto bg-gray-900 w-10/12 sm:w-2/4 md:w-[450px] h-20 my-8 rounded-2xl border-2 border-white">
 				<Image
-					className="mx-8 cursor-pointer"
+					className="w-10 md:w-[50px] mx-4 md:mx-8  cursor-pointer"
 					src="/fastbackward-icon.png"
 					alt="Fast Backward"
 					title="Fast Backward"
@@ -350,7 +353,7 @@ export default function Home() {
 					}}
 				></Image>
 				<Image
-					className="cursor-pointer"
+					className="w-7 md:w-[35px] cursor-pointer"
 					src="/backward-icon.png"
 					alt="Backward"
 					title="Backward"
@@ -361,7 +364,7 @@ export default function Home() {
 				></Image>
 				{fastforwarding || fastBackwarding ? (
 					<Image
-						className="cursor-pointer"
+						className="w-7 md:w-[35px] cursor-pointer"
 						src="/pause-icon.png"
 						alt="Pause"
 						title="Pause"
@@ -375,7 +378,7 @@ export default function Home() {
 					></Image>
 				) : (
 					<Image
-						className="cursor-pointer"
+						className="w-7 md:w-[35px] cursor-pointer"
 						src="/play-icon.png"
 						alt="Play"
 						title="Play"
@@ -385,7 +388,7 @@ export default function Home() {
 					></Image>
 				)}
 				<Image
-					className="cursor-pointer"
+					className="w-7 md:w-[35px] cursor-pointer"
 					src="/forward-icon.png"
 					alt="Forward"
 					title="Forward"
@@ -395,7 +398,7 @@ export default function Home() {
 					onClick={handleAdd}
 				></Image>
 				<Image
-					className="mx-8 cursor-pointer"
+					className="w-10 md:w-[50px] mx-4 md:mx-8 cursor-pointer"
 					src="/fastforward-icon.png"
 					alt="Fast Forward"
 					title="Fast Forward"
