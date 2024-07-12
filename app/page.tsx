@@ -14,12 +14,31 @@ export default function Home() {
 	const [offset, setOffset] = useState(0); // how much to offset each candle positioning by (so that everything is in view)
 	const [fastforwarding, setForwarding] = useState(false);
 	const [fastBackwarding, setBackwarding] = useState(false);
-	const reference = useRef<any>(null); // getting a reference of the canvas (graph element)
-	const canvasSize = useRef<any>(null); // getting a reference of the canvas (graph element)
-	const verticalLine = useRef<any>(null);
+	const canvas = useRef<any>(null); // getting a reference of the canvas (graph element)
+	const canvasSize = useRef<any>(null); // getting a reference of the canvasSize (creates scrolling space for the user)
+	const verticalLine = useRef<any>(null); //
 	const horizontalLine = useRef<any>(null);
+	const xAxis = useRef<any>(null);
+	const candlestickRef = useRef(null);
+
+	function getRandomDate(start: any, end: any) {
+		return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+	}
+
+	const startDate = new Date(2012, 0, 1); // Replace with your desired start date
+	const endDate = new Date(); // Replace with your desired end date (e.g., today)
+	const randomDate = getRandomDate(startDate, endDate);
+
+	const [initialDate, setInitialDate] = useState(randomDate);
+	const [currentDate, setCurrentDate] = useState(startDate);
 
 	const handleAdd = useCallback(() => {
+		// ensures that the window isn't getting scrolled as well
+		let x = window.scrollX;
+		let y = window.scrollY;
+		window.onscroll = function () {
+			window.scrollTo(x, y);
+		};
 		function getRandomInt(min: number, max: number) {
 			return Math.floor(Math.random() * (max - min + 1)) + min;
 		}
@@ -47,8 +66,6 @@ export default function Home() {
 				setOffset(offset + randomBodySize);
 			}
 		}
-		// scroll to position where new candle was created
-		reference.current.scrollTo(reference.current.scrollWidth, yPosition + offset);
 		setColors(prevMap => new Map(prevMap.set(count, color)));
 		setBodies(prevMap => new Map(prevMap.set(count, randomBodySize)));
 		setTopWicks(prevMap => new Map(prevMap.set(count, randomTopWickSize)));
@@ -56,6 +73,10 @@ export default function Home() {
 		setPositions(prevMap => new Map(prevMap.set(count, yPosition)));
 		setCount(count + 1);
 		setVal([...val, undefined]);
+		// wait for candle to render before allowing window to be scrolled again
+		setTimeout(() => {
+			window.onscroll = function () {};
+		}, 0);
 	}, [count, colors, offset, bodySizes, topwickSizes, positions, val]);
 
 	const handleDelete = useCallback(() => {
@@ -97,13 +118,13 @@ export default function Home() {
 		let scrollLeft: number;
 		let isDown: boolean;
 
-		const scrollThreshold = 3000; // Adjust as needed
+		let scrollThreshold = 600; // Adjust as needed
 		let currentCanvasHeight = 600;
 
 		const handleScroll = (e: any) => {
 			e.preventDefault();
 			const zoomStep = 0.05;
-			const currentZoom = parseFloat(reference.current.style.zoom || "1");
+			const currentZoom = parseFloat(canvas.current.style.zoom || "1");
 			const newZoom = e.deltaY > 0 ? currentZoom - zoomStep : currentZoom + zoomStep;
 
 			// Limit zoom range (minimum 20%, maximum 200%)
@@ -112,31 +133,32 @@ export default function Home() {
 			const clampedZoom = Math.min(Math.max(newZoom, minZoom), maxZoom);
 
 			// Update zoom
-			reference.current.style.zoom = clampedZoom.toString();
+			canvas.current.style.zoom = clampedZoom.toString();
 
 			// Update height proportionally
 			const baseHeight = 600; // Your base height value
 			const newHeight = baseHeight * (1 / clampedZoom);
+			scrollThreshold = newHeight;
 
 			// Apply the new height to your chart container
-			reference.current.style.height = `${newHeight}px`;
+			canvas.current.style.height = `${newHeight}px`;
 
 			// Apply the new margin
-			reference.current.style.marginTop = `${0}px`;
-			reference.current.style.marginBottom = `${0}px`;
+			canvas.current.style.marginTop = `${0}px`;
+			canvas.current.style.marginBottom = `${0}px`;
 		};
 		const handleMouseMove = (e: any) => {
 			// Update vertical and horizontal lines
-			const currentZoom = parseFloat(reference.current.style.zoom || "1");
+			const currentZoom = parseFloat(canvas.current.style.zoom || "1");
 
-			const canvasWidth = reference.current.offsetWidth / (1 / currentZoom);
+			const canvasWidth = canvas.current.offsetWidth / (1 / currentZoom);
 			horizontalLine.current.style.width = `${canvasWidth}px`;
-			const canvasLeft = reference.current.getBoundingClientRect().left / (1 / currentZoom);
+			const canvasLeft = canvas.current.getBoundingClientRect().left / (1 / currentZoom);
 			horizontalLine.current.style.left = `${canvasLeft}px`;
 
-			const canvasHeight = reference.current.offsetheight / (1 / currentZoom);
+			const canvasHeight = canvas.current.offsetheight / (1 / currentZoom);
 			verticalLine.current.style.height = `${canvasHeight}px`;
-			const canvasTop = reference.current.getBoundingClientRect().top / (1 / currentZoom) + window.scrollY;
+			const canvasTop = canvas.current.getBoundingClientRect().top / (1 / currentZoom) + window.scrollY;
 			verticalLine.current.style.top = `${canvasTop}px`;
 
 			// Update vertical and horizontal lines to follow user's cursor in the window
@@ -144,10 +166,30 @@ export default function Home() {
 			verticalLine.current.style.left = `${xPosition}px`;
 			const yPosition = e.pageY;
 			horizontalLine.current.style.top = `${yPosition}px`;
+
+			// Calculate the position of the cursor on the canvas
+			let cursorPosition = e.pageX - canvas.current.getBoundingClientRect().left * currentZoom + canvas.current.scrollLeft * currentZoom;
+			// Ensures that it cannot be less than 0
+			cursorPosition = cursorPosition < 0 ? 0 : cursorPosition;
+			let gridPosition = Math.floor(cursorPosition / (40 * currentZoom));
+			// Calculate the new date value
+			let newDateValue = initialDate.valueOf() + 864e5 * gridPosition;
+
+			// Convert the new date value to a Date object
+			setCurrentDate(new Date(newDateValue));
+
+			if (verticalLine.current.getBoundingClientRect().left <= canvas.current.getBoundingClientRect().left * currentZoom + 46) {
+				let xAxisLeft = canvas.current.getBoundingClientRect().left * currentZoom - 2 - verticalLine.current.getBoundingClientRect().left;
+				xAxis.current.style.left = `${xAxisLeft}px`;
+			} else if (verticalLine.current.getBoundingClientRect().right >= canvas.current.getBoundingClientRect().right * currentZoom - 46) {
+				let xAxisRight = verticalLine.current.getBoundingClientRect().right - canvas.current.getBoundingClientRect().right * currentZoom;
+				xAxis.current.style.right = `${xAxisRight}px`;
+				xAxis.current.style.left = `initial`;
+			} else xAxis.current.style.left = `-48px`;
 		};
 
-		reference.current.addEventListener("wheel", handleScroll);
-		reference.current.addEventListener("mouseenter", (e: any) => {
+		canvas.current.addEventListener("wheel", handleScroll);
+		canvas.current.addEventListener("mouseenter", (e: any) => {
 			let x = window.scrollX;
 			let y = window.scrollY;
 			window.onscroll = function () {
@@ -158,38 +200,42 @@ export default function Home() {
 			handleMouseMove(e);
 		});
 
-		reference.current.addEventListener("mouseleave", () => {
+		canvas.current.addEventListener("mouseleave", () => {
 			window.onscroll = function () {};
 			horizontalLine.current.style.display = "none";
 			verticalLine.current.style.display = "none";
 		});
 
-		reference.current.addEventListener("mousedown", (e: any) => {
+		canvas.current.addEventListener("mousedown", (e: any) => {
 			e.preventDefault();
 			isDown = true;
-			startX = e.pageX - reference.current.offsetLeft;
-			startY = e.pageY - reference.current.offsetTop;
-			scrollLeft = reference.current.scrollLeft;
-			scrollTop = reference.current.scrollTop;
+			startX = e.pageX - canvas.current.offsetLeft;
+			startY = e.pageY - canvas.current.offsetTop;
+			scrollLeft = canvas.current.scrollLeft;
+			scrollTop = canvas.current.scrollTop;
 		});
-		reference.current.addEventListener("mouseup", () => (isDown = false));
-		reference.current.addEventListener("mouseleave", () => (isDown = false));
-		reference.current.addEventListener("mousemove", (e: any) => {
+		canvas.current.addEventListener("mouseup", () => (isDown = false));
+		canvas.current.addEventListener("mouseleave", () => (isDown = false));
+		canvas.current.addEventListener("mousemove", (e: any) => {
 			if (isDown) {
-				const x = e.pageX - reference.current.offsetLeft;
-				const y = e.pageY - reference.current.offsetTop;
+				const x = e.pageX - canvas.current.offsetLeft;
+				const y = e.pageY - canvas.current.offsetTop;
 				const walkX = (x - startX) * 5;
 				const walkY = (y - startY) * 5;
-				reference.current.scrollLeft = scrollLeft - walkX;
-				reference.current.scrollTop = scrollTop - walkY;
+				canvas.current.scrollLeft = scrollLeft - walkX;
+				canvas.current.scrollTop = scrollTop - walkY;
 			}
 
-			const totalHeight = reference.current.scrollHeight;
+			const totalHeight = canvas.current.scrollHeight;
 
+			// add more space to the bottom of the canvas (by increasing the height of a special div)
 			if (scrollTop + window.innerHeight >= totalHeight - scrollThreshold) {
-				// User has scrolled to the bottom
 				currentCanvasHeight += 100;
 				canvasSize.current.style.height = `${currentCanvasHeight}px`;
+			}
+			// add more space to the top of the canvas (offsetting each candle's position)
+			if (scrollTop <= 100) {
+				setOffset(offset + 300);
 			}
 			handleMouseMove(e);
 		});
@@ -207,33 +253,36 @@ export default function Home() {
 		return () => {
 			clearInterval(addTimer); // Cleanup: clear the interval when component unmounts
 			clearInterval(deleteTimer); // Cleanup: clear the interval when component unmounts
-			reference.current.removeEventListener("wheel", handleScroll);
-			reference.current.removeEventListener("mousemove", handleMouseMove);
+			canvas.current.removeEventListener("wheel", handleScroll);
+			canvas.current.removeEventListener("mousemove", handleMouseMove);
 		};
-	}, [fastforwarding, fastBackwarding, handleAdd, handleDelete]);
+	}, [offset, fastforwarding, fastBackwarding, handleAdd, handleDelete]);
 
 	return (
 		<main className="min-h-screen max-w-screen py-1 bg-black text-center">
 			<h1 className="text-white text-5xl font-black my-10">SimuTrade</h1>
+			{/* Vertical and Horizontal crosshairs on canvas */}
 			<div
 				ref={verticalLine}
-				className="absolute h-[600px] top-[132px] border-l-2 border-dotted border-black pointer-events-none"
+				className="z-50 absolute h-[600px] top-[132px] border-l-2 border-dotted border-black pointer-events-none"
 				style={{ display: "none" }}
-			></div>
+			>
+				<div ref={xAxis} className="z-40 absolute h-12 w-24 bottom-0 left-[-48px] bg-gray-500 flex justify-center items-center text-white">
+					{currentDate.toDateString()}
+				</div>
+			</div>
 			<div
 				ref={horizontalLine}
-				className="absolute w-[995px] left-[46px] border-t-2 border-dotted border-black pointer-events-none"
+				className="z-40 absolute w-[995px] left-[46px] border-t-2 border-dotted border-black pointer-events-none"
 				style={{ display: "none" }}
 			></div>
-			<div
-				ref={reference}
-				className="top-8 left-0 flex bg-white h-[600px] w-11/12 overflow-auto my-8 mx-auto px-96 scrollbar-hide cursor-crosshair"
-			>
+			<div ref={canvas} className="top-8 left-0 flex bg-white h-[600px] w-11/12 overflow-auto my-8 mx-auto scrollbar-hide cursor-crosshair">
 				<div ref={canvasSize}></div>
 
 				{val.map((_: any, i: any) => {
 					return (
 						<Candlestick
+							ref={candlestickRef}
 							color={colors.get(i)}
 							bodySize={bodySizes.get(i)}
 							topwickSize={topwickSizes.get(i)}
