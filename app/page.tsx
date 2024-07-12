@@ -19,18 +19,32 @@ export default function Home() {
 	const verticalLine = useRef<any>(null); //
 	const horizontalLine = useRef<any>(null);
 	const xAxis = useRef<any>(null);
+	const yAxis = useRef<any>(null);
 	const candlestickRef = useRef(null);
 
 	function getRandomDate(start: any, end: any) {
 		return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 	}
 
+	function getRandomInt(min: number, max: number) {
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	function getRandomNumber(min: number, max: number) {
+		return Math.random() * (max - min) + min;
+	}
+
+	// initializing x-axis data
 	const startDate = new Date(2012, 0, 1); // Replace with your desired start date
 	const endDate = new Date(); // Replace with your desired end date (e.g., today)
 	const randomDate = getRandomDate(startDate, endDate);
 
 	const [initialDate, setInitialDate] = useState(randomDate);
 	const [currentDate, setCurrentDate] = useState(startDate);
+
+	// initializing y-axis data
+	const [initialPrice, setInitialPrice] = useState(getRandomNumber(1, 10));
+	const [currentPrice, setCurrentPrice] = useState(10);
 
 	const handleAdd = useCallback(() => {
 		// ensures that the window isn't getting scrolled as well
@@ -39,12 +53,10 @@ export default function Home() {
 		window.onscroll = function () {
 			window.scrollTo(x, y);
 		};
-		function getRandomInt(min: number, max: number) {
-			return Math.floor(Math.random() * (max - min + 1)) + min;
-		}
+
 		const randomBodySize = getRandomInt(50, 400);
-		const randomTopWickSize = getRandomInt(0, 120);
-		const randomBottomWickSize = getRandomInt(0, 120);
+		const randomTopWickSize = getRandomInt(0, 180);
+		const randomBottomWickSize = getRandomInt(0, 180);
 		const upOrDown = Math.floor(Math.random() * 2); // calculates an integer that is either 0 or 1
 		const color = upOrDown ? "green" : "red";
 		let yPosition = 0;
@@ -167,17 +179,31 @@ export default function Home() {
 			const yPosition = e.pageY;
 			horizontalLine.current.style.top = `${yPosition}px`;
 
-			// Calculate the position of the cursor on the canvas
-			let cursorPosition = e.pageX - canvas.current.getBoundingClientRect().left * currentZoom + canvas.current.scrollLeft * currentZoom;
+			// Calculate the x-position of the cursor on the canvas
+			let cursorXPosition =
+				e.pageX - canvas.current.getBoundingClientRect().left * currentZoom + canvas.current.scrollLeft * currentZoom + offset;
 			// Ensures that it cannot be less than 0
-			cursorPosition = cursorPosition < 0 ? 0 : cursorPosition;
-			let gridPosition = Math.floor(cursorPosition / (40 * currentZoom));
+			cursorXPosition = cursorXPosition < 0 ? 0 : cursorXPosition;
+			let gridXPosition = Math.floor(cursorXPosition / (40 * currentZoom));
 			// Calculate the new date value
-			let newDateValue = initialDate.valueOf() + 864e5 * gridPosition;
+			let newDateValue = initialDate.valueOf() + 864e5 * gridXPosition;
 
 			// Convert the new date value to a Date object
 			setCurrentDate(new Date(newDateValue));
 
+			// Calculate the y-position of the cursor on the canvas
+			let cursorYPosition =
+				e.pageY -
+				window.scrollY -
+				canvas.current.getBoundingClientRect().top * currentZoom +
+				canvas.current.scrollTop * currentZoom -
+				offset * currentZoom;
+
+			let newPriceValue = Math.exp((10000 - cursorYPosition / currentZoom) / 10000 + initialPrice);
+
+			setCurrentPrice(newPriceValue);
+
+			// Prevent the x-axis div from overflowing off the canvas
 			if (verticalLine.current.getBoundingClientRect().left <= canvas.current.getBoundingClientRect().left * currentZoom + 46) {
 				let xAxisLeft = canvas.current.getBoundingClientRect().left * currentZoom - 2 - verticalLine.current.getBoundingClientRect().left;
 				xAxis.current.style.left = `${xAxisLeft}px`;
@@ -186,6 +212,17 @@ export default function Home() {
 				xAxis.current.style.right = `${xAxisRight}px`;
 				xAxis.current.style.left = `initial`;
 			} else xAxis.current.style.left = `-48px`;
+
+			// Prevent the y-axis div from overflowing off the canvas
+			if (horizontalLine.current.getBoundingClientRect().top <= canvas.current.getBoundingClientRect().top * currentZoom + 20) {
+				let yAxisTop = canvas.current.getBoundingClientRect().top * currentZoom - 2 - horizontalLine.current.getBoundingClientRect().top;
+				yAxis.current.style.top = `${yAxisTop}px`;
+			} else if (horizontalLine.current.getBoundingClientRect().bottom >= canvas.current.getBoundingClientRect().bottom * currentZoom - 72) {
+				let yAxisBottom =
+					horizontalLine.current.getBoundingClientRect().bottom - canvas.current.getBoundingClientRect().bottom * currentZoom + 48;
+				yAxis.current.style.bottom = `${yAxisBottom}px`;
+				yAxis.current.style.top = `initial`;
+			} else yAxis.current.style.top = `-24px`;
 		};
 
 		canvas.current.addEventListener("wheel", handleScroll);
@@ -275,7 +312,11 @@ export default function Home() {
 				ref={horizontalLine}
 				className="z-40 absolute w-[995px] left-[46px] border-t-2 border-dotted border-black pointer-events-none"
 				style={{ display: "none" }}
-			></div>
+			>
+				<div ref={yAxis} className="z-40 absolute h-12 w-24 top-[-24px] right-0 bg-gray-500 flex justify-center items-center text-white">
+					{currentPrice.toFixed(2)}
+				</div>
+			</div>
 			<div ref={canvas} className="top-8 left-0 flex bg-white h-[600px] w-11/12 overflow-auto my-8 mx-auto scrollbar-hide cursor-crosshair">
 				<div ref={canvasSize}></div>
 
