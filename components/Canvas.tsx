@@ -18,11 +18,14 @@ export default function Canvas() {
 	const [openingPrice, setOpeningPrice] = useState(200);
 	const [data, setData] = useState<Record<string, Candlestick>>({});
 	const [count, setCount] = useState(0);
-	const [fastforwarding, setForwarding] = useState(false);
+	const [fastForwarding, setForwarding] = useState(false);
 	const [fastBackwarding, setBackwarding] = useState(false);
 
+	// state of canvas
+	const [scale, setScale] = useState(1);
+
 	// set React DOM references
-	const canvasRef = useRef(null);
+	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const contextRef = useRef<CanvasRenderingContext2D | null>(null);
 
 	// returns a random integer between min and max (both inclusive)
@@ -35,19 +38,65 @@ export default function Canvas() {
 		return Math.random() * (max - min) + min;
 	}
 
-	useEffect(() => {
-		// initializes canvas
-		const canvas: HTMLCanvasElement = canvasRef.current!;
-		canvas.width = canvas.offsetWidth;
-		canvas.height = canvas.offsetHeight;
-		const c = canvas.getContext("2d")!;
-		contextRef.current = c;
+	const drawCandlestick = useCallback((candlestick: Candlestick, index: number) => {
+		const c = contextRef.current!;
+		const x: number = index * 40;
+
+		if (candlestick.color === "green") {
+			// creates the candlestick body
+			c.fillStyle = candlestick.color;
+			c.fillRect(x, candlestick.openingPrice, 40, -candlestick.bodyHeight);
+
+			// creates the candlestick wicks
+			c.strokeStyle = candlestick.color;
+			c.lineWidth = 4;
+			c.beginPath();
+			// moves the line in between the candlestick body at its top
+			c.moveTo(x + 20, candlestick.closingPrice);
+			// draws the top wick
+			c.lineTo(x + 20, candlestick.closingPrice - candlestick.topWickHeight);
+			// moves the line in between the candlestick body at its bottom
+			c.moveTo(x + 20, candlestick.openingPrice);
+			// draws the bottom wick
+			c.lineTo(x + 20, candlestick.openingPrice + candlestick.bottomWickHeight);
+			c.stroke();
+		} else {
+			// creates the candlestick body
+			c.fillStyle = candlestick.color;
+			c.fillRect(x, candlestick.openingPrice, 40, candlestick.bodyHeight);
+
+			c.strokeStyle = candlestick.color;
+			c.lineWidth = 4;
+			// creates the candlestick wicks
+			c.beginPath();
+			// moves the line in between the candlestick body at its top
+			c.moveTo(x + 20, candlestick.openingPrice);
+			// draws the top wick
+			c.lineTo(x + 20, candlestick.openingPrice - candlestick.topWickHeight);
+			// moves the line in between the candlestick body at its bottom
+			c.moveTo(x + 20, candlestick.closingPrice);
+			// draws the bottom wick
+			c.lineTo(x + 20, candlestick.closingPrice + candlestick.bottomWickHeight);
+			c.stroke();
+		}
 	}, []);
 
+	const redrawCanvas = useCallback(
+		(newScale: number) => {
+			const c = contextRef.current!;
+			c.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
+			c.save();
+			c.scale(newScale, newScale);
+			Object.keys(data).forEach(key => {
+				const candlestick = data[key];
+				drawCandlestick(candlestick, Number(key) - 1);
+			});
+			c.restore();
+		},
+		[data, drawCandlestick]
+	);
+
 	const handleAdd = useCallback(() => {
-		const c = contextRef.current!;
-		// the x-coordinate of each candlestick (40 pixels wide)
-		const x: number = count * 40;
 		// map numbers to a color and its rgb value
 		const colors = new Map([
 			[0, ["red", "rgb(255, 50, 50)"]],
@@ -60,53 +109,12 @@ export default function Canvas() {
 
 		// randomly pick the sizes of the candlestick body and wicks
 		let bodyHeight = getRandomInt(12.5, 100);
-		// bodyHeight = color === "green" ? bodyHeight : -bodyHeight;
 		const topWickHeight = getRandomInt(0, 45);
 		const bottomWickHeight = getRandomInt(0, 45);
 		let closingPrice: number;
 
 		// green means negative y (candle goes up), red means positive y (candle goes down)
-		if (color === "green") {
-			closingPrice = openingPrice - bodyHeight;
-
-			// creates the candlestick body
-			c.fillStyle = rgb;
-			c.fillRect(x, openingPrice, 40, -bodyHeight);
-
-			// creates the candlestick wicks
-			c.strokeStyle = rgb;
-			c.lineWidth = 4;
-			c.beginPath();
-			// moves the line in between the candlestick body at its top
-			c.moveTo(x + 20, closingPrice);
-			// draws the top wick
-			c.lineTo(x + 20, closingPrice - topWickHeight);
-			// moves the line in between the candlestick body at its bottom
-			c.moveTo(x + 20, openingPrice);
-			// draws the bottom wick
-			c.lineTo(x + 20, openingPrice + bottomWickHeight);
-			c.stroke();
-		} else {
-			closingPrice = openingPrice + bodyHeight;
-
-			// creates the candlestick body
-			c.fillStyle = rgb;
-			c.fillRect(x, openingPrice, 40, bodyHeight);
-
-			c.strokeStyle = rgb;
-			c.lineWidth = 4;
-			// creates the candlestick wicks
-			c.beginPath();
-			// moves the line in between the candlestick body at its top
-			c.moveTo(x + 20, openingPrice);
-			// draws the top wick
-			c.lineTo(x + 20, openingPrice - topWickHeight);
-			// moves the line in between the candlestick body at its bottom
-			c.moveTo(x + 20, closingPrice);
-			// draws the bottom wick
-			c.lineTo(x + 20, closingPrice + bottomWickHeight);
-			c.stroke();
-		}
+		closingPrice = color === "green" ? openingPrice - bodyHeight : openingPrice + bodyHeight;
 
 		// creates new entry for data
 		let newCandlestick: Candlestick = {
@@ -131,7 +139,7 @@ export default function Canvas() {
 	const handleDelete = useCallback(() => {
 		if (count > 0) {
 			const c = contextRef.current!;
-			c.clearRect((count - 1) * 40, 0, 40, 1000);
+			c.clearRect((count - 1) * 40, 0, 40, canvasRef.current!.height);
 			const newPrice = count > 1 ? data[count - 1]["closingPrice"] : 200;
 			setOpeningPrice(newPrice);
 			delete data[count];
@@ -140,24 +148,52 @@ export default function Canvas() {
 		} else if (fastBackwarding) setBackwarding(false);
 	}, [count, data, fastBackwarding]);
 
+	// redraws the canvas anytime the state changes
+	useEffect(() => {
+		// uses setTimeout to ensure that variables load first
+		setTimeout(() => {
+			redrawCanvas(scale);
+		});
+	});
+
+	// runs anytime the state of fastForwarding / fasatBackwarding changes
 	useEffect(() => {
 		let addTimer: any;
 		let deleteTimer: any;
 
-		if (fastforwarding) {
+		if (fastForwarding) {
 			addTimer = setInterval(handleAdd, 500);
 		} else if (fastBackwarding) {
 			deleteTimer = setInterval(handleDelete, 500);
-		} else {
-			setForwarding(false);
-			setBackwarding(false);
 		}
 
 		return () => {
 			clearInterval(addTimer); // Cleanup: clear the interval when component unmounts
 			clearInterval(deleteTimer); // Cleanup: clear the interval when component unmounts
 		};
-	}, [fastforwarding, fastBackwarding, handleAdd, handleDelete]);
+	}, [fastForwarding, fastBackwarding, handleAdd, handleDelete]);
+
+	// initial render runs this function
+	useEffect(() => {
+		// initializes canvas
+		const canvas: HTMLCanvasElement = canvasRef.current!;
+		canvas.width = canvas.offsetWidth;
+		canvas.height = canvas.offsetHeight;
+		const c = canvas.getContext("2d")!;
+		contextRef.current = c;
+
+		const handleZoom = (event: WheelEvent) => {
+			event.preventDefault();
+			const scaleFactor = event.deltaY > 0 ? 0.9 : 1.1;
+			setScale(prevScale => prevScale * scaleFactor);
+		};
+
+		canvas.addEventListener("wheel", handleZoom);
+
+		return () => {
+			canvas.removeEventListener("wheel", handleZoom);
+		};
+	}, []);
 
 	return (
 		<>
@@ -186,7 +222,7 @@ export default function Canvas() {
 					style={{ height: "auto" }}
 					onClick={handleDelete}
 				/>
-				{fastforwarding || fastBackwarding ? (
+				{fastForwarding || fastBackwarding ? (
 					<Image
 						className="w-7 md:w-[35px] cursor-pointer"
 						src="/pause-icon.png"
