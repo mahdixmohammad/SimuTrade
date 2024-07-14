@@ -123,6 +123,8 @@ export default function Home() {
 		}
 	}, [val, count, colors, bodySizes, topwickSizes, bottomwickSizes, positions]);
 
+	const handleBuy = (e: any) => {};
+
 	useEffect(() => {
 		let startX: number;
 		let startY: number;
@@ -192,14 +194,14 @@ export default function Home() {
 			setCurrentDate(new Date(newDateValue));
 
 			// Calculate the y-position of the cursor on the canvas
-			let cursorYPosition =
+			let cursorYPosition: number =
 				e.pageY -
 				window.scrollY -
 				canvas.current.getBoundingClientRect().top * currentZoom +
 				canvas.current.scrollTop * currentZoom -
 				offset * currentZoom;
 
-			let newPriceValue = Math.exp((10000 - cursorYPosition / currentZoom) / 10000 + initialPrice);
+			let newPriceValue: number = Math.exp((10000 - cursorYPosition / currentZoom) / 10000 + initialPrice);
 
 			setCurrentPrice(newPriceValue);
 
@@ -317,6 +319,9 @@ export default function Home() {
 					{currentPrice.toFixed(2)}
 				</div>
 			</div>
+			{/* <button className="z-50 w-24 h-9 bg-green-500 rounded-lg absolute text-white font-bold mt-4 left-20" onClick={handleBuy}>
+				BUY
+			</button> */}
 			<div
 				ref={canvas}
 				className="top-8 left-0 flex bg-gray-900 h-[600px] w-11/12 overflow-auto my-8 mx-auto scrollbar-hide cursor-crosshair border-2 border-white"
