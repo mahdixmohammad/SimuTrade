@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 
 export default function Canvas() {
 	interface Candlestick {
 		date: Date;
+		color: string;
 		openingPrice: number;
 		closingPrice: number;
 		topWickHeight: number;
@@ -14,9 +15,11 @@ export default function Canvas() {
 	}
 
 	// initializes state of application
-	const [currentY, setY] = useState(200);
+	const [openingPrice, setOpeningPrice] = useState(200);
 	const [data, setData] = useState<Record<string, Candlestick>>({});
 	const [count, setCount] = useState(0);
+	const [fastforwarding, setForwarding] = useState(false);
+	const [fastBackwarding, setBackwarding] = useState(false);
 
 	// set React DOM references
 	const canvasRef = useRef(null);
@@ -41,7 +44,7 @@ export default function Canvas() {
 		contextRef.current = c;
 	}, []);
 
-	const handleAdd = async () => {
+	const handleAdd = useCallback(() => {
 		const c = contextRef.current!;
 		// the x-coordinate of each candlestick (40 pixels wide)
 		const x: number = count * 40;
@@ -60,75 +63,101 @@ export default function Canvas() {
 		// bodyHeight = color === "green" ? bodyHeight : -bodyHeight;
 		const topWickHeight = getRandomInt(0, 45);
 		const bottomWickHeight = getRandomInt(0, 45);
-		let newY: number;
+		let closingPrice: number;
+
+		// green means negative y (candle goes up), red means positive y (candle goes down)
+		if (color === "green") {
+			closingPrice = openingPrice - bodyHeight;
+
+			// creates the candlestick body
+			c.fillStyle = rgb;
+			c.fillRect(x, openingPrice, 40, -bodyHeight);
+
+			// creates the candlestick wicks
+			c.strokeStyle = rgb;
+			c.lineWidth = 4;
+			c.beginPath();
+			// moves the line in between the candlestick body at its top
+			c.moveTo(x + 20, closingPrice);
+			// draws the top wick
+			c.lineTo(x + 20, closingPrice - topWickHeight);
+			// moves the line in between the candlestick body at its bottom
+			c.moveTo(x + 20, openingPrice);
+			// draws the bottom wick
+			c.lineTo(x + 20, openingPrice + bottomWickHeight);
+			c.stroke();
+		} else {
+			closingPrice = openingPrice + bodyHeight;
+
+			// creates the candlestick body
+			c.fillStyle = rgb;
+			c.fillRect(x, openingPrice, 40, bodyHeight);
+
+			c.strokeStyle = rgb;
+			c.lineWidth = 4;
+			// creates the candlestick wicks
+			c.beginPath();
+			// moves the line in between the candlestick body at its top
+			c.moveTo(x + 20, openingPrice);
+			// draws the top wick
+			c.lineTo(x + 20, openingPrice - topWickHeight);
+			// moves the line in between the candlestick body at its bottom
+			c.moveTo(x + 20, closingPrice);
+			// draws the bottom wick
+			c.lineTo(x + 20, closingPrice + bottomWickHeight);
+			c.stroke();
+		}
+
+		// creates new entry for data
 		let newCandlestick: Candlestick = {
 			date: new Date(),
-			openingPrice: currentY,
-			closingPrice: currentY - bodyHeight,
+			color: color,
+			openingPrice: openingPrice,
+			closingPrice: closingPrice,
 			topWickHeight: topWickHeight,
 			bodyHeight: bodyHeight,
 			bottomWickHeight: bottomWickHeight,
 		};
 
-		// green means negative y (candle goes up), red means positive y (candle goes down)
-		if (color === "green") {
-			newY = currentY - bodyHeight;
-
-			// creates the candlestick body
-			c.fillStyle = rgb;
-			c.fillRect(x, newY, 40, bodyHeight);
-
-			// creates the candlestick wicks
-			c.strokeStyle = rgb;
-			c.lineWidth = 4;
-			c.beginPath();
-			// moves the line in between the candlestick body at its top
-			c.moveTo(x + 20, newY - topWickHeight);
-			// draws the top wick
-			c.lineTo(x + 20, newY);
-			// moves the line in between the candlestick body at its bottom
-			c.moveTo(x + 20, newY + bodyHeight);
-			// draws the bottom wick
-			c.lineTo(x + 20, newY + bodyHeight + bottomWickHeight);
-			c.stroke();
-		} else {
-			newY = currentY + bodyHeight;
-
-			// creates the candlestick body
-			c.fillStyle = rgb;
-			c.fillRect(x, newY, 40, -bodyHeight);
-
-			c.strokeStyle = rgb;
-			c.lineWidth = 4;
-			// creates the candlestick wicks
-			c.beginPath();
-			// moves the line in between the candlestick body at its top
-			c.moveTo(x + 20, newY - bodyHeight - topWickHeight);
-			// draws the top wick
-			c.lineTo(x + 20, newY);
-			// moves the line in between the candlestick body at its bottom
-			c.moveTo(x + 20, newY);
-			// draws the bottom wick
-			c.lineTo(x + 20, newY + bottomWickHeight);
-			c.stroke();
-		}
-
 		// sets new states
-		setY(newY);
+		setOpeningPrice(closingPrice);
 		setData(prevData => ({
 			...prevData,
 			[count + 1]: newCandlestick,
 		}));
 		setCount(count + 1);
-	};
+	}, [count, openingPrice]);
 
-	const handleDelete = () => {
+	const handleDelete = useCallback(() => {
 		if (count > 0) {
 			const c = contextRef.current!;
 			c.clearRect((count - 1) * 40, 0, 40, 1000);
+			const newPrice = count > 1 ? data[count - 1]["closingPrice"] : 200;
+			setOpeningPrice(newPrice);
+			delete data[count];
+			setData(data);
 			setCount(count - 1);
+		} else if (fastBackwarding) setBackwarding(false);
+	}, [count, data, fastBackwarding]);
+
+	useEffect(() => {
+		let addTimer: any;
+		let deleteTimer: any;
+
+		if (fastforwarding) {
+			addTimer = setInterval(handleAdd, 500);
+		} else if (fastBackwarding) {
+			deleteTimer = setInterval(handleDelete, 500);
+		} else {
+			setForwarding(false);
+			setBackwarding(false);
 		}
-	};
+
+		return () => {
+			clearInterval(addTimer); // Cleanup: clear the interval when component unmounts
+			clearInterval(deleteTimer); // Cleanup: clear the interval when component unmounts
+		};
+	}, [fastforwarding, fastBackwarding, handleAdd, handleDelete]);
 
 	return (
 		<>
@@ -143,8 +172,8 @@ export default function Canvas() {
 					height={0}
 					style={{ height: "auto" }}
 					onClick={() => {
-						// setForwarding(false);
-						// setBackwarding(true);
+						setForwarding(false);
+						setBackwarding(true);
 					}}
 				/>
 				<Image
@@ -157,7 +186,7 @@ export default function Canvas() {
 					style={{ height: "auto" }}
 					onClick={handleDelete}
 				/>
-				{/* {fastforwarding || fastBackwarding ? (
+				{fastforwarding || fastBackwarding ? (
 					<Image
 						className="w-7 md:w-[35px] cursor-pointer"
 						src="/pause-icon.png"
@@ -170,7 +199,7 @@ export default function Canvas() {
 							setForwarding(false);
 							setBackwarding(false);
 						}}
-					/>
+					></Image>
 				) : (
 					<Image
 						className="w-7 md:w-[35px] cursor-pointer"
@@ -180,8 +209,8 @@ export default function Canvas() {
 						width={35}
 						height={0}
 						style={{ height: "auto" }}
-					/>
-				)} */}
+					></Image>
+				)}
 				<Image
 					className="w-7 md:w-[35px] cursor-pointer"
 					src="/forward-icon.png"
@@ -201,8 +230,8 @@ export default function Canvas() {
 					height={0}
 					style={{ height: "auto" }}
 					onClick={() => {
-						// setForwarding(true);
-						// setBackwarding(false);
+						setForwarding(true);
+						setBackwarding(false);
 					}}
 				/>
 			</div>
