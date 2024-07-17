@@ -13,7 +13,8 @@ export default function Canvas() {
 	const yAxisRef = useRef<HTMLDivElement | null>(null);
 	const tradeButtonsRef = useRef<HTMLDivElement | null>(null);
 	const tradeSizeRef = useRef<HTMLInputElement | null>(null);
-	const longLineRef = useRef<HTMLDivElement | null>(null);
+	const tradeLineRef = useRef<HTMLDivElement | null>(null);
+	const slLineRef = useRef<HTMLDivElement | null>(null);
 
 	// returns a random integer between min and max (both inclusive)
 	function getRandomInt(min: number, max: number): number {
@@ -61,6 +62,11 @@ export default function Canvas() {
 	const [tradeType, setTradeType] = useState("");
 	const [tradePNL, setTradePNL] = useState(0);
 	const [tradeSize, setTradeSize] = useState(1);
+
+	// state of SL
+	const [slDragging, setSlDragging] = useState(false);
+	const [slOffset, setSlOffset] = useState(0);
+	const [SlPrevPosition, setSlPrevPosition] = useState(0);
 
 	function getRandomDate(start: any, end: any) {
 		return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
@@ -131,38 +137,41 @@ export default function Canvas() {
 
 	const drawTrade = useCallback(() => {
 		const canvas = canvasRef.current!;
-		const longLine = longLineRef.current!;
+		const tradeLine = tradeLineRef.current!;
+		const slLine = slLineRef.current!;
 
 		if (tradePrice >= 0 && count > 0) {
-			longLine.style.display = "block";
-			const loneLineTop = canvasRef.current!.getBoundingClientRect().top + window.scrollY + (priceToY(tradePrice) + panOffset.y) * scale;
-			longLine.style.top = `${loneLineTop}px`;
+			tradeLine.style.display = "block";
+			const tradeLineTop = canvasRef.current!.getBoundingClientRect().top + window.scrollY + (priceToY(tradePrice) + panOffset.y) * scale;
+			tradeLine.style.top = `${tradeLineTop}px`;
+
+			slLine.style.display = "block";
+			console.log(slOffset);
+			const slLineTop =
+				slOffset + 50 + canvasRef.current!.getBoundingClientRect().top + window.scrollY + (priceToY(tradePrice) + panOffset.y) * scale;
+			slLine.style.top = `${slLineTop}px`;
 
 			const pnl =
 				tradeType === "long" ? tradeSize * (data[count].closingPrice - tradePrice) : tradeSize * (tradePrice - data[count].closingPrice);
-			if (pnl > 0) longLine.style.color = "rgb(0, 167, 114)";
-			else if (pnl < 0) longLine.style.color = "rgb(255, 50, 50)";
-			else longLine.style.color = "white";
+			if (pnl > 0) tradeLine.style.color = "rgb(0, 167, 114)";
+			else if (pnl < 0) tradeLine.style.color = "rgb(255, 50, 50)";
+			else tradeLine.style.color = "white";
 			setTradePNL(pnl);
-
-			// c.strokeStyle = "orange";
-
-			// c.beginPath();
-			// c.setLineDash([2 / scale, 2 / scale]);
-			// c.moveTo(0 / scale - panOffset.x, y);
-			// c.lineTo(canvasRef.current!.offsetWidth / scale - panOffset.x, y);
-			// c.stroke();
-
-			// c.fillStyle = "white";
-			// c.fillRect((canvasRef.current!.offsetWidth - 100) / scale - panOffset.x, y - 15 / scale, 30 / scale, 30 / scale);
 		}
-		// Prevent the y-axis div from overflowing off the canvas
-		if (longLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top) {
-			longLine.style.display = "none";
-		} else if (longLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom) {
-			longLine.style.display = "none";
+		// Prevents tradeLine from overflowing off the canvas
+		if (tradeLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top) {
+			tradeLine.style.display = "none";
+		} else if (tradeLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom) {
+			tradeLine.style.display = "none";
 		}
-	}, [count, data, scale, panOffset, tradeType, tradePrice, tradeSize]); //scale, panOffset, tradePrice
+
+		// Prevents slLine from overflowing off the canvas
+		if (slLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top) {
+			slLine.style.display = "none";
+		} else if (slLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom) {
+			slLine.style.display = "none";
+		}
+	}, [count, data, scale, panOffset, tradeType, tradePrice, tradeSize, slOffset]); //scale, panOffset, tradePrice
 
 	const redrawCanvas = useCallback(
 		(newScale: number, panOffset: { x: number; y: number }) => {
@@ -184,7 +193,7 @@ export default function Canvas() {
 
 	const endTrade = () => {
 		// reset trade state to default
-		longLineRef.current!.style.display = "none";
+		tradeLineRef.current!.style.display = "none";
 		setTradePrice(-1);
 		setTradeType("");
 		setTradePNL(0);
@@ -286,6 +295,7 @@ export default function Canvas() {
 		const canvas: HTMLCanvasElement = canvasRef.current!;
 		const horizontalLine: HTMLDivElement = horizontalLineRef.current!;
 		const verticalLine: HTMLDivElement = verticalLineRef.current!;
+		const slLine: HTMLDivElement = slLineRef.current!;
 
 		const handleZoom = (event: WheelEvent) => {
 			event.preventDefault();
@@ -321,56 +331,58 @@ export default function Canvas() {
 		};
 
 		const handlePanEnd = () => {
-			canvas.style.cursor = "crosshair";
+			if (!slDragging) canvas.style.cursor = "crosshair";
 			setIsPanning(false);
 		};
 
 		// positions crosshairs to where the cursor moves
 		const handleLineMove = (e: any) => {
-			horizontalLine.style.left = `${canvas.getBoundingClientRect().left}px`;
-			horizontalLine.style.top = `${e.pageY}px`;
-			verticalLine.style.left = `${e.pageX}px`;
-			horizontalLine.style.display = "block";
-			verticalLine.style.display = "block";
+			if (!slDragging) {
+				horizontalLine.style.left = `${canvas.getBoundingClientRect().left}px`;
+				horizontalLine.style.top = `${e.pageY}px`;
+				verticalLine.style.left = `${e.pageX}px`;
+				horizontalLine.style.display = "block";
+				verticalLine.style.display = "block";
 
-			// Calculate the price based on the y-coordinate
-			const rect = canvas.getBoundingClientRect();
-			const canvasYPosition = (e.pageY - window.scrollY - rect.top) / scale - panOffset.y;
-			const price = yToPrice(canvasYPosition);
+				// Calculate the price based on the y-coordinate
+				const rect = canvas.getBoundingClientRect();
+				const canvasYPosition = (e.pageY - window.scrollY - rect.top) / scale - panOffset.y;
+				const price = yToPrice(canvasYPosition);
 
-			setCurrentPrice(price);
+				setCurrentPrice(price);
 
-			const canvasXPosition = (e.pageX - rect.left) / scale - panOffset.x;
+				const canvasXPosition = (e.pageX - rect.left) / scale - panOffset.x;
 
-			let gridXPosition = Math.floor(canvasXPosition / 20);
-			// Calculate the new date value
-			let newDateValue = initialDate.valueOf() + 864e5 * gridXPosition;
+				let gridXPosition = Math.floor(canvasXPosition / 20);
+				// Calculate the new date value
+				let newDateValue = initialDate.valueOf() + 864e5 * gridXPosition;
 
-			// Convert the new date value to a Date object
-			setCurrentDate(new Date(newDateValue));
+				// Convert the new date value to a Date object
+				setCurrentDate(new Date(newDateValue));
 
-			const xAxis = xAxisRef.current!;
-			const yAxis = yAxisRef.current!;
+				const xAxis = xAxisRef.current!;
+				const yAxis = yAxisRef.current!;
 
-			// Prevent the x-axis div from overflowing off the canvas
-			if (verticalLine.getBoundingClientRect().left <= canvas.getBoundingClientRect().left + 46) {
-				let xAxisLeft = canvas.getBoundingClientRect().left - 2 - verticalLine.getBoundingClientRect().left;
-				xAxis.style.left = `${xAxisLeft}px`;
-			} else if (verticalLine.getBoundingClientRect().right >= canvas.getBoundingClientRect().right - 46) {
-				let xAxisRight = verticalLine.getBoundingClientRect().right - canvas.getBoundingClientRect().right;
-				xAxis.style.right = `${xAxisRight}px`;
-				xAxis.style.left = `initial`;
-			} else xAxis.style.left = `-48px`;
+				// Prevent the x-axis div from overflowing off the canvas
+				if (verticalLine.getBoundingClientRect().left <= canvas.getBoundingClientRect().left + 46) {
+					let xAxisLeft = canvas.getBoundingClientRect().left - 2 - verticalLine.getBoundingClientRect().left;
+					xAxis.style.left = `${xAxisLeft}px`;
+				} else if (verticalLine.getBoundingClientRect().right >= canvas.getBoundingClientRect().right - 46) {
+					let xAxisRight = verticalLine.getBoundingClientRect().right - canvas.getBoundingClientRect().right;
+					xAxis.style.right = `${xAxisRight}px`;
+					xAxis.style.left = `initial`;
+				} else xAxis.style.left = `-48px`;
 
-			// Prevent the y-axis div from overflowing off the canvas
-			if (horizontalLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top + 20) {
-				let yAxisTop = canvas.getBoundingClientRect().top - 2 - horizontalLine.getBoundingClientRect().top;
-				yAxis.style.top = `${yAxisTop}px`;
-			} else if (horizontalLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom - 72) {
-				let yAxisBottom = horizontalLine.getBoundingClientRect().bottom - canvas.getBoundingClientRect().bottom + 48;
-				yAxis.style.bottom = `${yAxisBottom}px`;
-				yAxis.style.top = `initial`;
-			} else yAxis.style.top = `-24px`;
+				// Prevent the y-axis div from overflowing off the canvas
+				if (horizontalLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top + 20) {
+					let yAxisTop = canvas.getBoundingClientRect().top - 2 - horizontalLine.getBoundingClientRect().top;
+					yAxis.style.top = `${yAxisTop}px`;
+				} else if (horizontalLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom - 72) {
+					let yAxisBottom = horizontalLine.getBoundingClientRect().bottom - canvas.getBoundingClientRect().bottom + 48;
+					yAxis.style.bottom = `${yAxisBottom}px`;
+					yAxis.style.top = `initial`;
+				} else yAxis.style.top = `-24px`;
+			}
 		};
 
 		// makes crosshairs invisible when users are not on the canvas
@@ -381,10 +393,30 @@ export default function Canvas() {
 
 		const handleResizing = () => {
 			tradeButtonsRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
-			longLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
+			tradeLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
+			slLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
 		};
 
 		handleResizing();
+
+		const handleSLDragStart = (e: any) => {
+			e.preventDefault();
+			canvas.style.cursor = "grabbing";
+			slLine.style.cursor = "grabbing";
+			setSlPrevPosition(slLine.getBoundingClientRect().top);
+			setSlDragging(true);
+		};
+		const handleSLDragEnd = (e: any) => {
+			canvas.style.cursor = "crosshair";
+			slLine.style.cursor = "pointer";
+			setSlDragging(false);
+		};
+
+		const handleSLMove = (e: any) => {
+			if (slDragging) {
+				setSlOffset(slOffset + e.pageY - SlPrevPosition - window.scrollY);
+			}
+		};
 
 		// zoom and panning functionality
 		canvas.addEventListener("wheel", handleZoom);
@@ -397,7 +429,13 @@ export default function Canvas() {
 		canvas.addEventListener("mousemove", handleLineMove);
 		canvas.addEventListener("mouseleave", handleLineLeave);
 
+		// aligns all relevant UI with the canvas
 		window.addEventListener("resize", handleResizing);
+
+		// drag stop loss functionality
+		slLine.addEventListener("mousedown", handleSLDragStart);
+		slLine.addEventListener("mouseup", handleSLDragEnd);
+		canvas.addEventListener("mousemove", handleSLMove);
 
 		// cleanup
 		return () => {
@@ -411,8 +449,12 @@ export default function Canvas() {
 			canvas.removeEventListener("mouseleave", handleLineLeave);
 
 			window.removeEventListener("resize", handleResizing);
+
+			slLine.removeEventListener("mousedown", handleSLDragStart);
+			slLine.removeEventListener("mouseup", handleSLDragEnd);
+			canvas.removeEventListener("mousemove", handleSLMove);
 		};
-	}, [openingPrice, data, initialDate, scale, isPanning, panOffset, lastPanPosition]);
+	}, [openingPrice, data, initialDate, scale, isPanning, panOffset, lastPanPosition, slDragging, SlPrevPosition]);
 
 	// runs anytime the state of fastForwarding / fasatBackwarding changes
 	useEffect(() => {
@@ -465,7 +507,7 @@ export default function Canvas() {
 				</button>
 			</div>
 			<div
-				ref={longLineRef}
+				ref={tradeLineRef}
 				className="z-10 absolute w-11/12 left-[46px] top-[400px] border-t-2 border-dotted border-yellow-500 pointer-events-none text-white"
 				style={{ display: "none" }}
 			>
@@ -479,15 +521,21 @@ export default function Canvas() {
 						<div className="w-4 h-0.5 bg-red-500 -rotate-[50deg] absolute bottom-1 left-[-21px]"></div>
 						<div className="w-4 h-0.5 bg-red-500 rotate-[50deg] absolute bottom-1 left-[-30.5px]"></div>
 					</div>
+
 					<div className="w-7 h-8 bg-gray-950 absolute right-[-28px] border-2 border-yellow-500" onClick={endTrade}></div>
 					<div className="w-6 h-0.5 bg-red-500 rotate-45 absolute right-[-26px]"></div>
 					<div className="w-6 h-0.5 bg-red-500 -rotate-45 absolute right-[-26px]"></div>
 				</div>
 			</div>
 			<div
+				ref={slLineRef}
+				className="z-10 absolute w-11/12 left-[46px] top-[400px] border-t-2 border-dotted border-red-500 cursor-pointer text-white"
+				style={{ display: "none" }}
+			></div>
+			<div
 				ref={horizontalLineRef}
 				className="absolute w-11/12 left-[46px] border-t-2 border-dotted border-white pointer-events-none"
-				style={{ display: "none" }}
+				style={{ display: "none", userSelect: "none" }}
 			>
 				<div ref={yAxisRef} className="z-10 absolute h-12 w-24 top-[-24px] right-0 bg-gray-500 flex justify-center items-center text-white">
 					{currentPrice.toFixed(2)}
@@ -496,7 +544,7 @@ export default function Canvas() {
 			<div
 				ref={verticalLineRef}
 				className="absolute h-[600px] top-[132px] border-l-2 border-dotted border-white pointer-events-none"
-				style={{ display: "none" }}
+				style={{ display: "none", userSelect: "none" }}
 			>
 				<div ref={xAxisRef} className="z-10 absolute h-12 w-24 bottom-0 left-[-48px] bg-gray-500 flex justify-center items-center text-white">
 					{currentDate.toDateString()}
