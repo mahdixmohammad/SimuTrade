@@ -5,12 +5,15 @@ import Image from "next/image";
 
 export default function Canvas() {
 	// set React DOM references
+	const canvasRef = useRef<HTMLCanvasElement | null>(null);
+	const contextRef = useRef<CanvasRenderingContext2D | null>(null);
 	const horizontalLineRef = useRef<HTMLDivElement | null>(null);
 	const verticalLineRef = useRef<HTMLDivElement | null>(null);
 	const xAxisRef = useRef<HTMLDivElement | null>(null);
 	const yAxisRef = useRef<HTMLDivElement | null>(null);
-	const canvasRef = useRef<HTMLCanvasElement | null>(null);
-	const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+	const tradeButtonsRef = useRef<HTMLDivElement | null>(null);
+	const tradeSizeRef = useRef<HTMLInputElement | null>(null);
+	const longLineRef = useRef<HTMLDivElement | null>(null);
 
 	// returns a random integer between min and max (both inclusive)
 	function getRandomInt(min: number, max: number): number {
@@ -24,12 +27,10 @@ export default function Canvas() {
 
 	const yToPrice = (y: number): number => {
 		return Math.exp(-y / 10000);
-		// return 1 / Math.exp((y - 5000) / 1000);
 	};
 
 	const priceToY = (price: number): number => {
 		return Math.log(price) * -10000;
-		// return 5000 + 1000 * Math.log(1 / price);
 	};
 
 	interface Candlestick {
@@ -54,6 +55,12 @@ export default function Canvas() {
 	const [isPanning, setIsPanning] = useState(false);
 	const [panOffset, setPanOffset] = useState({ x: 0, y: -priceToY(openingPrice + openingPrice / 30) });
 	const [lastPanPosition, setLastPanPosition] = useState({ x: 0, y: 0 });
+
+	// state of trade
+	const [tradePrice, setTradePrice] = useState(-1);
+	const [tradeType, setTradeType] = useState("");
+	const [tradePNL, setTradePNL] = useState(0);
+	const [tradeSize, setTradeSize] = useState(1);
 
 	function getRandomDate(start: any, end: any) {
 		return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
@@ -122,21 +129,67 @@ export default function Canvas() {
 		[scale]
 	);
 
+	const drawTrade = useCallback(() => {
+		const canvas = canvasRef.current!;
+		const longLine = longLineRef.current!;
+
+		if (tradePrice >= 0 && count > 0) {
+			longLine.style.display = "block";
+			const loneLineTop = canvasRef.current!.getBoundingClientRect().top + window.scrollY + (priceToY(tradePrice) + panOffset.y) * scale;
+			longLine.style.top = `${loneLineTop}px`;
+
+			const pnl =
+				tradeType === "long" ? tradeSize * (data[count].closingPrice - tradePrice) : tradeSize * (tradePrice - data[count].closingPrice);
+			if (pnl > 0) longLine.style.color = "rgb(0, 167, 114)";
+			else if (pnl < 0) longLine.style.color = "rgb(255, 50, 50)";
+			else longLine.style.color = "white";
+			setTradePNL(pnl);
+
+			// c.strokeStyle = "orange";
+
+			// c.beginPath();
+			// c.setLineDash([2 / scale, 2 / scale]);
+			// c.moveTo(0 / scale - panOffset.x, y);
+			// c.lineTo(canvasRef.current!.offsetWidth / scale - panOffset.x, y);
+			// c.stroke();
+
+			// c.fillStyle = "white";
+			// c.fillRect((canvasRef.current!.offsetWidth - 100) / scale - panOffset.x, y - 15 / scale, 30 / scale, 30 / scale);
+		}
+		// Prevent the y-axis div from overflowing off the canvas
+		if (longLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top) {
+			longLine.style.display = "none";
+		} else if (longLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom) {
+			longLine.style.display = "none";
+		}
+	}, [count, data, scale, panOffset, tradeType, tradePrice, tradeSize]); //scale, panOffset, tradePrice
+
 	const redrawCanvas = useCallback(
 		(newScale: number, panOffset: { x: number; y: number }) => {
 			const c = contextRef.current!;
 			c.clearRect(0, 0, canvasRef.current!.width, canvasRef.current!.height);
 			c.save();
+
 			c.scale(newScale, newScale);
 			c.translate(panOffset.x, panOffset.y);
 			Object.keys(data).forEach(key => {
 				const candlestick = data[key];
 				drawCandlestick(candlestick, Number(key) - 1);
 			});
+			drawTrade();
 			c.restore();
 		},
-		[data, drawCandlestick]
+		[data, drawCandlestick, drawTrade]
 	);
+
+	const endTrade = () => {
+		// reset trade state to default
+		longLineRef.current!.style.display = "none";
+		setTradePrice(-1);
+		setTradeType("");
+		setTradePNL(0);
+		setTradeSize(1);
+	};
 
 	const handleAdd = useCallback(() => {
 		// adds a day to each candlestick
@@ -180,6 +233,8 @@ export default function Canvas() {
 			lowPrice: lowPrice,
 		};
 
+		tradeButtonsRef.current!.style.display = "flex";
+
 		// sets new states
 		setOpeningPrice(closingPrice);
 		setData(prevData => ({
@@ -190,16 +245,23 @@ export default function Canvas() {
 	}, [initialDate, count, openingPrice]);
 
 	const handleDelete = useCallback(() => {
-		if (count > 0) {
-			const c = contextRef.current!;
+		const c = contextRef.current!;
+		if (count > 1) {
 			c.clearRect((count - 1) * 20, 0, 20, canvasRef.current!.height);
-			const newPrice = count > 1 ? data[count - 1]["closingPrice"] : initialPrice;
-			setOpeningPrice(newPrice);
+			setOpeningPrice(data[count - 1].closingPrice);
 			delete data[count];
 			setData(data);
 			setCount(count - 1);
-		} else if (fastBackwarding) setBackwarding(false);
-	}, [count, data, initialPrice, fastBackwarding]);
+		} else {
+			c.clearRect(0, 0, 20, canvasRef.current!.height);
+			setOpeningPrice(initialPrice);
+			setData({});
+			setCount(0);
+			// removes trade and stops fastbackwarding
+			endTrade();
+			setBackwarding(false);
+		}
+	}, [count, data, initialPrice]);
 
 	// redraws the canvas anytime the state changes
 	useEffect(() => {
@@ -317,6 +379,13 @@ export default function Canvas() {
 			verticalLine.style.display = "none";
 		};
 
+		const handleResizing = () => {
+			tradeButtonsRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
+			longLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
+		};
+
+		handleResizing();
+
 		// zoom and panning functionality
 		canvas.addEventListener("wheel", handleZoom);
 		canvas.addEventListener("mousedown", handlePanStart);
@@ -328,6 +397,8 @@ export default function Canvas() {
 		canvas.addEventListener("mousemove", handleLineMove);
 		canvas.addEventListener("mouseleave", handleLineLeave);
 
+		window.addEventListener("resize", handleResizing);
+
 		// cleanup
 		return () => {
 			canvas.removeEventListener("wheel", handleZoom);
@@ -338,8 +409,10 @@ export default function Canvas() {
 
 			canvas.removeEventListener("mousemove", handleLineMove);
 			canvas.removeEventListener("mouseleave", handleLineLeave);
+
+			window.removeEventListener("resize", handleResizing);
 		};
-	}, [data, initialDate, scale, isPanning, panOffset, lastPanPosition]);
+	}, [openingPrice, data, initialDate, scale, isPanning, panOffset, lastPanPosition]);
 
 	// runs anytime the state of fastForwarding / fasatBackwarding changes
 	useEffect(() => {
@@ -360,21 +433,72 @@ export default function Canvas() {
 
 	return (
 		<>
+			<div ref={tradeButtonsRef} className="absolute left-8 mt-2 w-72 h-12 hidden gap-3 justify-center items-center">
+				<button
+					className="z-50 w-24 h-9 bg-green-500 rounded-lg text-white font-bold left-16"
+					onClick={() => {
+						setTradePrice(data[count].closingPrice);
+						setTradeSize(Number(tradeSizeRef.current!.value));
+						setTradeType("long");
+					}}
+				>
+					BUY
+				</button>
+				<input
+					ref={tradeSizeRef}
+					type="number"
+					defaultValue={1}
+					min={1}
+					max={1000}
+					required
+					className="w-14 h-9 text-center border-2 border-blue-700"
+				></input>
+				<button
+					className="z-50 w-24 h-9 bg-red-500 rounded-lg text-white font-bold left-44"
+					onClick={() => {
+						setTradePrice(data[count].closingPrice);
+						setTradeSize(Number(tradeSizeRef.current!.value));
+						setTradeType("short");
+					}}
+				>
+					SELL
+				</button>
+			</div>
 			<div
-				ref={horizontalLineRef}
-				className="z-40 absolute w-11/12 left-[46px] border-t-2 border-dotted border-white pointer-events-none"
+				ref={longLineRef}
+				className="z-10 absolute w-11/12 left-[46px] top-[400px] border-t-2 border-dotted border-yellow-500 pointer-events-none text-white"
 				style={{ display: "none" }}
 			>
-				<div ref={yAxisRef} className="z-40 absolute h-12 w-24 top-[-24px] right-0 bg-gray-500 flex justify-center items-center text-white">
+				<div className="z-10 absolute h-8 w-24 top-[-16px] right-48 bg-black flex justify-center items-center border-2 border-yellow-500 cursor-pointer pointer-events-auto">
+					{tradePNL.toFixed(2)}
+					<div>
+						<div className="w-4 h-0.5 bg-green-500 -rotate-[50deg] absolute top-1 left-[-30.5px]"></div>
+						<div className="w-4 h-0.5 bg-green-500 rotate-[50deg] absolute top-1 left-[-21px]"></div>
+					</div>
+					<div>
+						<div className="w-4 h-0.5 bg-red-500 -rotate-[50deg] absolute bottom-1 left-[-21px]"></div>
+						<div className="w-4 h-0.5 bg-red-500 rotate-[50deg] absolute bottom-1 left-[-30.5px]"></div>
+					</div>
+					<div className="w-7 h-8 bg-gray-950 absolute right-[-28px] border-2 border-yellow-500" onClick={endTrade}></div>
+					<div className="w-6 h-0.5 bg-red-500 rotate-45 absolute right-[-26px]"></div>
+					<div className="w-6 h-0.5 bg-red-500 -rotate-45 absolute right-[-26px]"></div>
+				</div>
+			</div>
+			<div
+				ref={horizontalLineRef}
+				className="absolute w-11/12 left-[46px] border-t-2 border-dotted border-white pointer-events-none"
+				style={{ display: "none" }}
+			>
+				<div ref={yAxisRef} className="z-10 absolute h-12 w-24 top-[-24px] right-0 bg-gray-500 flex justify-center items-center text-white">
 					{currentPrice.toFixed(2)}
 				</div>
 			</div>
 			<div
 				ref={verticalLineRef}
-				className="z-50 absolute h-[600px] top-[132px] border-l-2 border-dotted border-white pointer-events-none"
+				className="absolute h-[600px] top-[132px] border-l-2 border-dotted border-white pointer-events-none"
 				style={{ display: "none" }}
 			>
-				<div ref={xAxisRef} className="z-40 absolute h-12 w-24 bottom-0 left-[-48px] bg-gray-500 flex justify-center items-center text-white">
+				<div ref={xAxisRef} className="z-10 absolute h-12 w-24 bottom-0 left-[-48px] bg-gray-500 flex justify-center items-center text-white">
 					{currentDate.toDateString()}
 				</div>
 			</div>
