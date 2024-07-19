@@ -211,15 +211,19 @@ export default function Canvas() {
 
 		// Prevents tpLine from overflowing off the canvas
 		if (tpLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top) {
+			tpLine.style.top = `${canvas.getBoundingClientRect().top}px`;
 			tpLine.style.visibility = "hidden";
 		} else if (tpLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom) {
+			tpLine.style.top = `${canvas.getBoundingClientRect().top}px`;
 			tpLine.style.visibility = "hidden";
 		}
 
 		// Prevents slLine from overflowing off the canvas
 		if (slLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top) {
+			slLine.style.top = `${canvas.getBoundingClientRect().top}px`;
 			slLine.style.visibility = "hidden";
 		} else if (slLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom) {
+			slLine.style.top = `${canvas.getBoundingClientRect().top}px`;
 			slLine.style.visibility = "hidden";
 		}
 	}, [count, data, scale, panOffset, tradeType, tradePrice, tradeSize, tpOffset, tpActive, tpPrice, slOffset, slActive, slPrice]); //scale, panOffset, tradePrice
