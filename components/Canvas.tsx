@@ -367,6 +367,18 @@ export default function Canvas() {
 		}
 	}, [count, data, endTrade, initialPrice]);
 
+	// validates what the user is typing in
+	const handleInput = () => {
+		const tradeSize = tradeSizeRef.current!;
+		if (!tradeSize.value || Number(tradeSize.value) > 999.9 || Number(tradeSize.value) < 0.1) {
+			tradeSize.style.border = "3px solid red";
+			tradeSize.style.background = "rgb(255, 195, 195)";
+		} else {
+			tradeSize.style.border = "0";
+			tradeSize.style.background = "revert-layer";
+		}
+	};
+
 	// redraws the canvas anytime the state changes
 	useEffect(() => {
 		// uses setTimeout to ensure that variables load first
@@ -636,29 +648,31 @@ export default function Canvas() {
 				<button
 					className="z-50 w-24 h-9 bg-green-500 rounded-lg text-white font-bold left-16"
 					onClick={() => {
-						// positioning the TP arrow above the trade line
-						const firstTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(1)")!;
-						const secondTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(2)")!;
-						firstTPArrow.style.top = "2px";
-						firstTPArrow.style.bottom = "initial";
-						firstTPArrow.style.left = "-28px";
-						secondTPArrow.style.top = "2px";
-						secondTPArrow.style.bottom = "initial";
-						secondTPArrow.style.left = "-21px";
+						if (Number(tradeSizeRef.current!.value) >= 0.1 && Number(tradeSizeRef.current!.value) <= 999.9) {
+							// positioning the TP arrow above the trade line
+							const firstTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(1)")!;
+							const secondTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(2)")!;
+							firstTPArrow.style.top = "2px";
+							firstTPArrow.style.bottom = "initial";
+							firstTPArrow.style.left = "-28px";
+							secondTPArrow.style.top = "2px";
+							secondTPArrow.style.bottom = "initial";
+							secondTPArrow.style.left = "-21px";
 
-						// positioning the SL arrow below the trade line
-						const firstSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(1)")!;
-						const secondSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(2)")!;
-						firstSLArrow.style.top = "initial";
-						firstSLArrow.style.bottom = "2px";
-						firstSLArrow.style.left = "-21px";
-						secondSLArrow.style.top = "initial";
-						secondSLArrow.style.bottom = "2px";
-						secondSLArrow.style.left = "-28px";
+							// positioning the SL arrow below the trade line
+							const firstSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(1)")!;
+							const secondSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(2)")!;
+							firstSLArrow.style.top = "initial";
+							firstSLArrow.style.bottom = "2px";
+							firstSLArrow.style.left = "-21px";
+							secondSLArrow.style.top = "initial";
+							secondSLArrow.style.bottom = "2px";
+							secondSLArrow.style.left = "-28px";
 
-						setTradePrice(data[count].closingPrice);
-						setTradeSize(Number(tradeSizeRef.current!.value));
-						setTradeType("long");
+							setTradePrice(data[count].closingPrice);
+							setTradeSize(Number(tradeSizeRef.current!.value));
+							setTradeType("long");
+						}
 					}}
 				>
 					BUY
@@ -667,37 +681,41 @@ export default function Canvas() {
 					ref={tradeSizeRef}
 					type="number"
 					defaultValue={1}
-					min={1}
-					max={1000}
+					min={0.1}
+					max={999.9}
+					step={0.1}
 					required
-					className="w-14 h-9 text-center border-2 border-blue-700"
+					className="w-14 h-9 text-center outline-0 bg-slate-200 font-bold"
+					onKeyUp={handleInput}
 				></input>
 				<button
 					className="z-50 w-24 h-9 bg-red-500 rounded-lg text-white font-bold left-44"
 					onClick={() => {
-						// positioning the TP arrow below the trade line
-						const firstTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(1)")!;
-						const secondTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(2)")!;
-						firstTPArrow.style.top = "initial";
-						firstTPArrow.style.bottom = "2px";
-						firstTPArrow.style.left = "-21px";
-						secondTPArrow.style.top = "initial";
-						secondTPArrow.style.bottom = "2px";
-						secondTPArrow.style.left = "-28px";
+						if (Number(tradeSizeRef.current!.value) >= 0.1 && Number(tradeSizeRef.current!.value) <= 999.9) {
+							// positioning the TP arrow below the trade line
+							const firstTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(1)")!;
+							const secondTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(2)")!;
+							firstTPArrow.style.top = "initial";
+							firstTPArrow.style.bottom = "2px";
+							firstTPArrow.style.left = "-21px";
+							secondTPArrow.style.top = "initial";
+							secondTPArrow.style.bottom = "2px";
+							secondTPArrow.style.left = "-28px";
 
-						// positioning the SL arrow above the trade line
-						const firstSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(1)")!;
-						const secondSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(2)")!;
-						firstSLArrow.style.top = "2px";
-						firstSLArrow.style.bottom = "initial";
-						firstSLArrow.style.left = "-28px";
-						secondSLArrow.style.top = "2px";
-						secondSLArrow.style.bottom = "initial";
-						secondSLArrow.style.left = "-21px";
+							// positioning the SL arrow above the trade line
+							const firstSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(1)")!;
+							const secondSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(2)")!;
+							firstSLArrow.style.top = "2px";
+							firstSLArrow.style.bottom = "initial";
+							firstSLArrow.style.left = "-28px";
+							secondSLArrow.style.top = "2px";
+							secondSLArrow.style.bottom = "initial";
+							secondSLArrow.style.left = "-21px";
 
-						setTradePrice(data[count].closingPrice);
-						setTradeSize(Number(tradeSizeRef.current!.value));
-						setTradeType("short");
+							setTradePrice(data[count].closingPrice);
+							setTradeSize(Number(tradeSizeRef.current!.value));
+							setTradeType("short");
+						}
 					}}
 				>
 					SELL
