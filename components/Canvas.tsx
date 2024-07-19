@@ -11,10 +11,18 @@ export default function Canvas() {
 	const verticalLineRef = useRef<HTMLDivElement | null>(null);
 	const xAxisRef = useRef<HTMLDivElement | null>(null);
 	const yAxisRef = useRef<HTMLDivElement | null>(null);
+
 	const tradeButtonsRef = useRef<HTMLDivElement | null>(null);
 	const tradeSizeRef = useRef<HTMLInputElement | null>(null);
 	const tradeLineRef = useRef<HTMLDivElement | null>(null);
+
+	const initializeTPButton = useRef<HTMLDivElement | null>(null);
+	const tpLineRef = useRef<HTMLDivElement | null>(null);
+	const tpLineMarkerRef = useRef<HTMLDivElement | null>(null);
+
+	const initializeSLButton = useRef<HTMLDivElement | null>(null);
 	const slLineRef = useRef<HTMLDivElement | null>(null);
+	const slLineMarkerRef = useRef<HTMLDivElement | null>(null);
 
 	// returns a random integer between min and max (both inclusive)
 	function getRandomInt(min: number, max: number): number {
@@ -63,10 +71,21 @@ export default function Canvas() {
 	const [tradePNL, setTradePNL] = useState(0);
 	const [tradeSize, setTradeSize] = useState(1);
 
+	// state of TP
+	const [tpActive, setTpActive] = useState(false);
+	const [tpDragging, setTpDragging] = useState(false);
+	const [tpPrevPosition, setTpPrevPosition] = useState(0);
+	const [tpOffset, setTpOffset] = useState(0);
+	const [tpPrice, setTpPrice] = useState(-1);
+	const [tpPNL, setTpPNL] = useState(-1);
+
 	// state of SL
+	const [slActive, setSlActive] = useState(false);
 	const [slDragging, setSlDragging] = useState(false);
+	const [slPrevPosition, setSlPrevPosition] = useState(0);
 	const [slOffset, setSlOffset] = useState(0);
-	const [SlPrevPosition, setSlPrevPosition] = useState(0);
+	const [slPrice, setSlPrice] = useState(-1);
+	const [slPNL, setSlPNL] = useState(-1);
 
 	function getRandomDate(start: any, end: any) {
 		return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
@@ -138,6 +157,7 @@ export default function Canvas() {
 	const drawTrade = useCallback(() => {
 		const canvas = canvasRef.current!;
 		const tradeLine = tradeLineRef.current!;
+		const tpLine = tpLineRef.current!;
 		const slLine = slLineRef.current!;
 
 		if (tradePrice >= 0 && count > 0) {
@@ -145,11 +165,35 @@ export default function Canvas() {
 			const tradeLineTop = canvasRef.current!.getBoundingClientRect().top + window.scrollY + (priceToY(tradePrice) + panOffset.y) * scale;
 			tradeLine.style.top = `${tradeLineTop}px`;
 
-			slLine.style.display = "block";
-			console.log(slOffset);
+			if (tpActive) {
+				tpLine.style.visibility = "visible";
+			}
+
+			if (slActive) {
+				slLine.style.visibility = "visible";
+			}
+
+			const tpLineTop =
+				canvasRef.current!.getBoundingClientRect().top + window.scrollY + (priceToY(tradePrice) + panOffset.y + tpOffset) * scale;
+			tpLine.style.top = `${tpLineTop}px`;
+			setTpPrice(yToPrice((tpLineTop - window.scrollY - canvasRef.current!.getBoundingClientRect().top) / scale - panOffset.y));
+
 			const slLineTop =
-				slOffset + 50 + canvasRef.current!.getBoundingClientRect().top + window.scrollY + (priceToY(tradePrice) + panOffset.y) * scale;
+				canvasRef.current!.getBoundingClientRect().top + window.scrollY + (priceToY(tradePrice) + panOffset.y + slOffset) * scale;
 			slLine.style.top = `${slLineTop}px`;
+			setSlPrice(yToPrice((slLineTop - window.scrollY - canvasRef.current!.getBoundingClientRect().top) / scale - panOffset.y));
+
+			const tpPNL = tradeType === "long" ? tradeSize * (tpPrice - tradePrice) : tradeSize * (tradePrice - tpPrice);
+			if (tpPNL > 0) tpLine.style.color = "rgb(0, 167, 114)";
+			else if (tpPNL < 0) tpLine.style.color = "rgb(255, 50, 50)";
+			else tpLine.style.color = "white";
+			setTpPNL(tpPNL);
+
+			const slPNL = tradeType === "long" ? tradeSize * (slPrice - tradePrice) : tradeSize * (tradePrice - slPrice);
+			if (slPNL > 0) slLine.style.color = "rgb(0, 167, 114)";
+			else if (slPNL < 0) slLine.style.color = "rgb(255, 50, 50)";
+			else slLine.style.color = "white";
+			setSlPNL(slPNL);
 
 			const pnl =
 				tradeType === "long" ? tradeSize * (data[count].closingPrice - tradePrice) : tradeSize * (tradePrice - data[count].closingPrice);
@@ -165,13 +209,20 @@ export default function Canvas() {
 			tradeLine.style.display = "none";
 		}
 
+		// Prevents tpLine from overflowing off the canvas
+		if (tpLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top) {
+			tpLine.style.visibility = "hidden";
+		} else if (tpLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom) {
+			tpLine.style.visibility = "hidden";
+		}
+
 		// Prevents slLine from overflowing off the canvas
 		if (slLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top) {
-			slLine.style.display = "none";
+			slLine.style.visibility = "hidden";
 		} else if (slLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom) {
-			slLine.style.display = "none";
+			slLine.style.visibility = "hidden";
 		}
-	}, [count, data, scale, panOffset, tradeType, tradePrice, tradeSize, slOffset]); //scale, panOffset, tradePrice
+	}, [count, data, scale, panOffset, tradeType, tradePrice, tradeSize, tpOffset, tpActive, tpPrice, slOffset, slActive, slPrice]); //scale, panOffset, tradePrice
 
 	const redrawCanvas = useCallback(
 		(newScale: number, panOffset: { x: number; y: number }) => {
@@ -191,14 +242,40 @@ export default function Canvas() {
 		[data, drawCandlestick, drawTrade]
 	);
 
-	const endTrade = () => {
+	const removeTP = useCallback(() => {
+		if (tpDragging) {
+			canvasRef.current!.style.cursor = "crosshair";
+			tpLineRef.current!.style.cursor = "pointer";
+			setTpDragging(false);
+		}
+		initializeTPButton.current!.style.display = "block";
+		tpLineRef.current!.style.visibility = "hidden";
+		setTpActive(false);
+		setTpPrice(-1);
+	}, [tpDragging]);
+
+	const removeSL = useCallback(() => {
+		if (slDragging) {
+			canvasRef.current!.style.cursor = "crosshair";
+			slLineRef.current!.style.cursor = "pointer";
+			setSlDragging(false);
+		}
+		initializeSLButton.current!.style.display = "block";
+		slLineRef.current!.style.visibility = "hidden";
+		setSlActive(false);
+		setSlPrice(-1);
+	}, [slDragging]);
+
+	const endTrade = useCallback(() => {
 		// reset trade state to default
 		tradeLineRef.current!.style.display = "none";
+		removeTP();
+		removeSL();
 		setTradePrice(-1);
 		setTradeType("");
 		setTradePNL(0);
 		setTradeSize(1);
-	};
+	}, [removeSL, removeTP]);
 
 	const handleAdd = useCallback(() => {
 		// adds a day to each candlestick
@@ -232,6 +309,20 @@ export default function Canvas() {
 
 		closingPrice = yToPrice(closingPriceY);
 
+		// hitting take profit
+		if (tpActive && tradeType === "long" && highPrice >= tpPrice) {
+			endTrade();
+		} else if (tpActive && tradeType === "short" && lowPrice <= tpPrice) {
+			endTrade();
+		}
+
+		// hitting stop loss
+		if (slActive && tradeType === "long" && lowPrice <= slPrice) {
+			endTrade();
+		} else if (slActive && tradeType === "short" && highPrice >= slPrice) {
+			endTrade();
+		}
+
 		// creates new entry for data
 		let newCandlestick: Candlestick = {
 			date: date,
@@ -251,7 +342,7 @@ export default function Canvas() {
 			[count + 1]: newCandlestick,
 		}));
 		setCount(count + 1);
-	}, [initialDate, count, openingPrice]);
+	}, [initialDate, count, openingPrice, tpActive, tradeType, tpPrice, slActive, slPrice, endTrade]);
 
 	const handleDelete = useCallback(() => {
 		const c = contextRef.current!;
@@ -270,7 +361,7 @@ export default function Canvas() {
 			endTrade();
 			setBackwarding(false);
 		}
-	}, [count, data, initialPrice]);
+	}, [count, data, endTrade, initialPrice]);
 
 	// redraws the canvas anytime the state changes
 	useEffect(() => {
@@ -295,6 +386,7 @@ export default function Canvas() {
 		const canvas: HTMLCanvasElement = canvasRef.current!;
 		const horizontalLine: HTMLDivElement = horizontalLineRef.current!;
 		const verticalLine: HTMLDivElement = verticalLineRef.current!;
+		const tpLine: HTMLDivElement = tpLineRef.current!;
 		const slLine: HTMLDivElement = slLineRef.current!;
 
 		const handleZoom = (event: WheelEvent) => {
@@ -391,13 +483,41 @@ export default function Canvas() {
 			verticalLine.style.display = "none";
 		};
 
+		// aligns all relevant UI to the canvas when window is resized
 		const handleResizing = () => {
 			tradeButtonsRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
 			tradeLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
+			tpLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
+			tpLineMarkerRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
 			slLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
+			slLineMarkerRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
 		};
 
+		// runs it when the page is initially loaded
 		handleResizing();
+
+		const handleTPDragStart = (e: any) => {
+			e.preventDefault();
+			canvas.style.cursor = "grabbing";
+			tpLine.style.cursor = "grabbing";
+			setTpPrevPosition(tpLine.getBoundingClientRect().top);
+			setTpDragging(true);
+		};
+
+		const handleTPMove = (e: MouseEvent) => {
+			if (tpDragging) {
+				tpLineMarkerRef.current!.style.display = "block";
+				tpLineMarkerRef.current!.style.top = `${e.pageY}px`;
+			}
+			if (tpDragging && e.buttons !== 1) {
+				tpLineMarkerRef.current!.style.display = "none";
+				canvas.style.cursor = "crosshair";
+				tpLine.style.cursor = "pointer";
+				setTpOffset(tpOffset + (e.clientY - tpPrevPosition) / scale);
+				setTpActive(true);
+				setTpDragging(false);
+			}
+		};
 
 		const handleSLDragStart = (e: any) => {
 			e.preventDefault();
@@ -406,15 +526,19 @@ export default function Canvas() {
 			setSlPrevPosition(slLine.getBoundingClientRect().top);
 			setSlDragging(true);
 		};
-		const handleSLDragEnd = (e: any) => {
-			canvas.style.cursor = "crosshair";
-			slLine.style.cursor = "pointer";
-			setSlDragging(false);
-		};
 
-		const handleSLMove = (e: any) => {
+		const handleSLMove = (e: MouseEvent) => {
 			if (slDragging) {
-				setSlOffset(slOffset + e.pageY - SlPrevPosition - window.scrollY);
+				slLineMarkerRef.current!.style.display = "block";
+				slLineMarkerRef.current!.style.top = `${e.pageY}px`;
+			}
+			if (slDragging && e.buttons !== 1) {
+				slLineMarkerRef.current!.style.display = "none";
+				canvas.style.cursor = "crosshair";
+				slLine.style.cursor = "pointer";
+				setSlOffset(slOffset + (e.clientY - slPrevPosition) / scale);
+				setSlActive(true);
+				setSlDragging(false);
 			}
 		};
 
@@ -432,10 +556,23 @@ export default function Canvas() {
 		// aligns all relevant UI with the canvas
 		window.addEventListener("resize", handleResizing);
 
+		// drag take profit functionality
+		tpLine.addEventListener("mousedown", handleTPDragStart);
+		canvas.addEventListener("mousemove", handleTPMove);
+
 		// drag stop loss functionality
 		slLine.addEventListener("mousedown", handleSLDragStart);
-		slLine.addEventListener("mouseup", handleSLDragEnd);
 		canvas.addEventListener("mousemove", handleSLMove);
+
+		initializeTPButton.current!.addEventListener("mousedown", (e: MouseEvent) => {
+			initializeTPButton.current!.style.display = "none";
+			handleTPDragStart(e);
+		});
+
+		initializeSLButton.current!.addEventListener("mousedown", (e: MouseEvent) => {
+			initializeSLButton.current!.style.display = "none";
+			handleSLDragStart(e);
+		});
 
 		// cleanup
 		return () => {
@@ -450,11 +587,27 @@ export default function Canvas() {
 
 			window.removeEventListener("resize", handleResizing);
 
+			tpLine.removeEventListener("mousedown", handleTPDragStart);
+			canvas.removeEventListener("mousemove", handleTPMove);
+
 			slLine.removeEventListener("mousedown", handleSLDragStart);
-			slLine.removeEventListener("mouseup", handleSLDragEnd);
 			canvas.removeEventListener("mousemove", handleSLMove);
 		};
-	}, [openingPrice, data, initialDate, scale, isPanning, panOffset, lastPanPosition, slDragging, SlPrevPosition]);
+	}, [
+		openingPrice,
+		data,
+		initialDate,
+		scale,
+		isPanning,
+		panOffset,
+		lastPanPosition,
+		tpDragging,
+		tpPrevPosition,
+		tpOffset,
+		slDragging,
+		slPrevPosition,
+		slOffset,
+	]);
 
 	// runs anytime the state of fastForwarding / fasatBackwarding changes
 	useEffect(() => {
@@ -479,6 +632,26 @@ export default function Canvas() {
 				<button
 					className="z-50 w-24 h-9 bg-green-500 rounded-lg text-white font-bold left-16"
 					onClick={() => {
+						// positioning the TP arrow above the trade line
+						const firstTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(1)")!;
+						const secondTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(2)")!;
+						firstTPArrow.style.top = "2px";
+						firstTPArrow.style.bottom = "initial";
+						firstTPArrow.style.left = "-28px";
+						secondTPArrow.style.top = "2px";
+						secondTPArrow.style.bottom = "initial";
+						secondTPArrow.style.left = "-21px";
+
+						// positioning the SL arrow below the trade line
+						const firstSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(1)")!;
+						const secondSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(2)")!;
+						firstSLArrow.style.top = "initial";
+						firstSLArrow.style.bottom = "2px";
+						firstSLArrow.style.left = "-21px";
+						secondSLArrow.style.top = "initial";
+						secondSLArrow.style.bottom = "2px";
+						secondSLArrow.style.left = "-28px";
+
 						setTradePrice(data[count].closingPrice);
 						setTradeSize(Number(tradeSizeRef.current!.value));
 						setTradeType("long");
@@ -498,6 +671,26 @@ export default function Canvas() {
 				<button
 					className="z-50 w-24 h-9 bg-red-500 rounded-lg text-white font-bold left-44"
 					onClick={() => {
+						// positioning the TP arrow below the trade line
+						const firstTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(1)")!;
+						const secondTPArrow: HTMLDivElement = initializeTPButton.current!.querySelector("div:nth-child(2)")!;
+						firstTPArrow.style.top = "initial";
+						firstTPArrow.style.bottom = "2px";
+						firstTPArrow.style.left = "-21px";
+						secondTPArrow.style.top = "initial";
+						secondTPArrow.style.bottom = "2px";
+						secondTPArrow.style.left = "-28px";
+
+						// positioning the SL arrow above the trade line
+						const firstSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(1)")!;
+						const secondSLArrow: HTMLDivElement = initializeSLButton.current!.querySelector("div:nth-child(2)")!;
+						firstSLArrow.style.top = "2px";
+						firstSLArrow.style.bottom = "initial";
+						firstSLArrow.style.left = "-28px";
+						secondSLArrow.style.top = "2px";
+						secondSLArrow.style.bottom = "initial";
+						secondSLArrow.style.left = "-21px";
+
 						setTradePrice(data[count].closingPrice);
 						setTradeSize(Number(tradeSizeRef.current!.value));
 						setTradeType("short");
@@ -508,30 +701,74 @@ export default function Canvas() {
 			</div>
 			<div
 				ref={tradeLineRef}
-				className="z-10 absolute w-11/12 left-[46px] top-[400px] border-t-2 border-dotted border-yellow-500 pointer-events-none text-white"
+				className="z-10 absolute w-11/12 left-[46px] border-t-2 border-dotted border-yellow-500 pointer-events-none text-white"
 				style={{ display: "none" }}
 			>
-				<div className="z-10 absolute h-8 w-24 top-[-16px] right-48 bg-black flex justify-center items-center border-2 border-yellow-500 cursor-pointer pointer-events-auto">
+				<div className="z-10 absolute h-6 w-24 top-[-12px] right-48 bg-black flex justify-center items-center border-2 border-yellow-500 cursor-pointer pointer-events-auto">
 					{tradePNL.toFixed(2)}
-					<div>
-						<div className="w-4 h-0.5 bg-green-500 -rotate-[50deg] absolute top-1 left-[-30.5px]"></div>
-						<div className="w-4 h-0.5 bg-green-500 rotate-[50deg] absolute top-1 left-[-21px]"></div>
+					<div ref={initializeTPButton}>
+						<div className="w-3 h-0.5 bg-green-500 -rotate-[45deg] absolute"></div>
+						<div className="w-3 h-0.5 bg-green-500 rotate-[45deg] absolute"></div>
 					</div>
-					<div>
-						<div className="w-4 h-0.5 bg-red-500 -rotate-[50deg] absolute bottom-1 left-[-21px]"></div>
-						<div className="w-4 h-0.5 bg-red-500 rotate-[50deg] absolute bottom-1 left-[-30.5px]"></div>
+					<div ref={initializeSLButton}>
+						<div className="w-3 h-0.5 bg-red-500 -rotate-[45deg] absolute"></div>
+						<div className="w-3 h-0.5 bg-red-500 rotate-[45deg] absolute"></div>
 					</div>
-
-					<div className="w-7 h-8 bg-gray-950 absolute right-[-28px] border-2 border-yellow-500" onClick={endTrade}></div>
-					<div className="w-6 h-0.5 bg-red-500 rotate-45 absolute right-[-26px]"></div>
-					<div className="w-6 h-0.5 bg-red-500 -rotate-45 absolute right-[-26px]"></div>
+					<div
+						className="w-7 h-6 bg-gray-950 absolute right-[-28px] border-2 border-yellow-500 flex items-center justify-center"
+						onClick={() => {
+							endTrade();
+							removeTP();
+							removeSL();
+						}}
+					>
+						<div className="w-5 h-0.5 bg-red-500 rotate-45 absolute"></div>
+						<div className="w-5 h-0.5 bg-red-500 -rotate-45 absolute"></div>
+					</div>
 				</div>
 			</div>
 			<div
-				ref={slLineRef}
-				className="z-10 absolute w-11/12 left-[46px] top-[400px] border-t-2 border-dotted border-red-500 cursor-pointer text-white"
+				ref={tpLineMarkerRef}
+				className="z-10 absolute w-11/12 left-[46px] border-t-2 border-dotted border-green-500 opacity-50 pointer-events-none"
 				style={{ display: "none" }}
 			></div>
+			<div
+				ref={tpLineRef}
+				className="z-10 absolute w-11/12 left-[46px] border-t-2 border-dotted border-green-500 cursor-pointer text-white"
+				style={{ visibility: "hidden" }}
+			>
+				<div className="z-10 absolute h-6 w-24 top-[-12px] right-48 bg-black flex justify-center items-center border-2 border-green-500 cursor-pointer pointer-events-auto">
+					{tpPNL.toFixed(2)}
+					<div
+						className="w-7 h-6 bg-gray-950 absolute right-[-28px] border-2 border-green-500 flex items-center justify-center"
+						onClick={removeTP}
+					>
+						<div className="w-5 h-0.5 bg-red-500 rotate-45 absolute"></div>
+						<div className="w-5 h-0.5 bg-red-500 -rotate-45 absolute"></div>
+					</div>
+				</div>
+			</div>
+			<div
+				ref={slLineMarkerRef}
+				className="z-10 absolute w-11/12 left-[46px] border-t-2 border-dotted border-red-500 opacity-50 pointer-events-none"
+				style={{ display: "none" }}
+			></div>
+			<div
+				ref={slLineRef}
+				className="z-10 absolute w-11/12 left-[46px] border-t-2 border-dotted border-red-500 cursor-pointer text-white"
+				style={{ visibility: "hidden" }}
+			>
+				<div className="z-10 absolute h-6 w-24 top-[-12px] right-48 bg-black flex justify-center items-center border-2 border-red-500 cursor-pointer pointer-events-auto">
+					{slPNL.toFixed(2)}
+					<div
+						className="w-7 h-6 bg-gray-950 absolute right-[-28px] border-2 border-red-500 flex items-center justify-center"
+						onClick={removeSL}
+					>
+						<div className="w-5 h-0.5 bg-red-500 rotate-45 absolute"></div>
+						<div className="w-5 h-0.5 bg-red-500 -rotate-45 absolute"></div>
+					</div>
+				</div>
+			</div>
 			<div
 				ref={horizontalLineRef}
 				className="absolute w-11/12 left-[46px] border-t-2 border-dotted border-white pointer-events-none"
