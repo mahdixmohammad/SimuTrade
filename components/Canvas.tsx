@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useAppDispatch } from "@/lib/hooks";
 import Image from "next/image";
+import { changePNL } from "@/lib/slice";
 
 export default function Canvas() {
 	// set React DOM references
@@ -101,6 +103,9 @@ export default function Canvas() {
 
 	// initializing y-axis data
 	const [currentPrice, setCurrentPrice] = useState(0);
+
+	// redux state management
+	const dispatch = useAppDispatch();
 
 	const drawCandlestick = useCallback(
 		(candlestick: Candlestick, index: number) => {
@@ -273,13 +278,14 @@ export default function Canvas() {
 	const endTrade = useCallback(() => {
 		// reset trade state to default
 		tradeLineRef.current!.style.display = "none";
+		dispatch(changePNL(tradePNL));
 		removeTP();
 		removeSL();
 		setTradePrice(-1);
 		setTradeType("");
 		setTradePNL(0);
 		setTradeSize(1);
-	}, [removeSL, removeTP]);
+	}, [dispatch, removeSL, removeTP, tradePNL]);
 
 	const handleAdd = useCallback(() => {
 		// adds a day to each candlestick
