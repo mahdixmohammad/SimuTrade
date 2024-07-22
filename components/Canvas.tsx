@@ -68,6 +68,7 @@ export default function Canvas() {
 	const [lastPanPosition, setLastPanPosition] = useState({ x: 0, y: 0 });
 
 	// state of trade
+	const [tradeStartDate, setTradeStart] = useState(new Date());
 	const [tradePrice, setTradePrice] = useState(-1);
 	const [tradeType, setTradeType] = useState("");
 	const [tradePNL, setTradePNL] = useState(0);
@@ -278,14 +279,14 @@ export default function Canvas() {
 	const endTrade = useCallback(() => {
 		// reset trade state to default
 		tradeLineRef.current!.style.display = "none";
-		dispatch(changePNL(tradePNL));
+		dispatch(changePNL({ pnl: tradePNL, units: tradeSize, tradeStartDate: tradeStartDate, tradeEndDate: data[count].date }));
 		removeTP();
 		removeSL();
 		setTradePrice(-1);
 		setTradeType("");
 		setTradePNL(0);
 		setTradeSize(1);
-	}, [dispatch, removeSL, removeTP, tradePNL]);
+	}, [count, data, dispatch, removeSL, removeTP, tradePNL, tradeSize, tradeStartDate]);
 
 	const handleAdd = useCallback(() => {
 		// adds a day to each candlestick
@@ -321,8 +322,10 @@ export default function Canvas() {
 
 		// hitting take profit
 		if (tpActive && tradeType === "long" && highPrice >= tpPrice) {
+			setTradePNL(tpPNL);
 			endTrade();
 		} else if (tpActive && tradeType === "short" && lowPrice <= tpPrice) {
+			setTradePNL(slPNL);
 			endTrade();
 		}
 
@@ -352,7 +355,7 @@ export default function Canvas() {
 			[count + 1]: newCandlestick,
 		}));
 		setCount(count + 1);
-	}, [initialDate, count, openingPrice, tpActive, tradeType, tpPrice, slActive, slPrice, endTrade]);
+	}, [initialDate, count, openingPrice, tpActive, tradeType, tpPrice, slActive, slPrice, tpPNL, endTrade, slPNL]);
 
 	const handleDelete = useCallback(() => {
 		const c = contextRef.current!;
@@ -675,6 +678,7 @@ export default function Canvas() {
 							secondSLArrow.style.bottom = "2px";
 							secondSLArrow.style.left = "-28px";
 
+							setTradeStart(data[count].date);
 							setTradePrice(data[count].closingPrice);
 							setTradeSize(Number(tradeSizeRef.current!.value));
 							setTradeType("long");
@@ -808,7 +812,7 @@ export default function Canvas() {
 			</div>
 			<div
 				ref={verticalLineRef}
-				className="absolute h-[600px] top-[132px] border-l-2 border-dotted border-white pointer-events-none"
+				className="absolute h-[600px] top-[120px] border-l-2 border-dotted border-white pointer-events-none"
 				style={{ display: "none", userSelect: "none" }}
 			>
 				<div ref={xAxisRef} className="z-10 absolute h-12 w-24 bottom-0 left-[-48px] bg-gray-500 flex justify-center items-center text-white">
