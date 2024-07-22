@@ -41,7 +41,7 @@ export default function Dashboard() {
 
 		updateElementColor(document.querySelector("span#account-balance")!, accountBalance, 10000);
 		updateElementColor(document.querySelector("span#pnl")!, pnl, 0);
-		// updateElementColor(document.querySelector("span#winrate")!, pnl, 50);
+		updateElementColor(document.querySelector("span#winrate")!, pnl, 50);
 	});
 
 	return (

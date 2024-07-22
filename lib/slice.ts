@@ -32,15 +32,15 @@ const initialState: DashboardState = {
 interface PayloadObject {
 	pnl: number;
 	units: number;
-	tradeStartDate: Date;
-	tradeEndDate: Date;
+	tradeStartTimestamp: number;
+	tradeEndTimestamp: number;
 }
 
 export const dashboardSlice = createSlice({
 	name: "dashboard",
 	initialState,
 	reducers: {
-		changePNL: (state, action: PayloadAction<PayloadObject>) => {
+		changeDashboard: (state, action: PayloadAction<PayloadObject>) => {
 			state.accountBalance += action.payload.pnl;
 			state.pnl += action.payload.pnl;
 
@@ -56,9 +56,9 @@ export const dashboardSlice = createSlice({
 			state.winrate = (state.wins / (state.wins + state.losses)) * 100;
 			state.units += action.payload.units;
 			state.averageUnits = (state.averageUnits * (state.wins + state.losses - 1) + action.payload.units) / (state.wins + state.losses);
-			const tradeDurationDifference = Math.round(
-				(action.payload.tradeEndDate.getTime() - action.payload.tradeStartDate.getTime()) / (1000 * 3600)
-			);
+			const tradeStartDate = new Date(action.payload.tradeStartTimestamp);
+			const tradeEndDate = new Date(action.payload.tradeEndTimestamp);
+			const tradeDurationDifference = Math.round((tradeEndDate.getTime() - tradeStartDate.getTime()) / (1000 * 3600));
 			state.totalTradeDuration += tradeDurationDifference;
 			state.averageTradeDuration =
 				(state.averageTradeDuration * (state.wins + state.losses - 1) + tradeDurationDifference) / (state.wins + state.losses);
@@ -66,7 +66,7 @@ export const dashboardSlice = createSlice({
 	},
 });
 
-export const { changePNL } = dashboardSlice.actions;
+export const { changeDashboard } = dashboardSlice.actions;
 
 export const selectAccountBalance = (state: RootState) => state.dashboard.accountBalance;
 export const selectPNL = (state: RootState) => state.dashboard.pnl;

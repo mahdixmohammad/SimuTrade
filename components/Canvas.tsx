@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAppDispatch } from "@/lib/hooks";
 import Image from "next/image";
-import { changePNL } from "@/lib/slice";
+import { changeDashboard } from "@/lib/slice";
 
 export default function Canvas() {
 	// set React DOM references
@@ -276,17 +276,28 @@ export default function Canvas() {
 		setSlPrice(-1);
 	}, [slDragging]);
 
-	const endTrade = useCallback(() => {
-		// reset trade state to default
-		tradeLineRef.current!.style.display = "none";
-		dispatch(changePNL({ pnl: tradePNL, units: tradeSize, tradeStartDate: tradeStartDate, tradeEndDate: data[count].date }));
-		removeTP();
-		removeSL();
-		setTradePrice(-1);
-		setTradeType("");
-		setTradePNL(0);
-		setTradeSize(1);
-	}, [count, data, dispatch, removeSL, removeTP, tradePNL, tradeSize, tradeStartDate]);
+	const endTrade = useCallback(
+		(finalPNL: number) => {
+			// reset trade state to default
+			tradeLineRef.current!.style.display = "none";
+			// dispatch action to change state of dashboard
+			dispatch(
+				changeDashboard({
+					pnl: finalPNL,
+					units: tradeSize,
+					tradeStartTimestamp: tradeStartDate.getTime(),
+					tradeEndTimestamp: data[count].date.getTime(),
+				})
+			);
+			removeTP();
+			removeSL();
+			setTradePrice(-1);
+			setTradeType("");
+			setTradePNL(0);
+			setTradeSize(1);
+		},
+		[count, data, dispatch, removeSL, removeTP, tradeSize, tradeStartDate]
+	);
 
 	const handleAdd = useCallback(() => {
 		// adds a day to each candlestick
@@ -322,18 +333,16 @@ export default function Canvas() {
 
 		// hitting take profit
 		if (tpActive && tradeType === "long" && highPrice >= tpPrice) {
-			setTradePNL(tpPNL);
-			endTrade();
+			endTrade(tpPNL);
 		} else if (tpActive && tradeType === "short" && lowPrice <= tpPrice) {
-			setTradePNL(slPNL);
-			endTrade();
+			endTrade(tpPNL);
 		}
 
 		// hitting stop loss
 		if (slActive && tradeType === "long" && lowPrice <= slPrice) {
-			endTrade();
+			endTrade(slPNL);
 		} else if (slActive && tradeType === "short" && highPrice >= slPrice) {
-			endTrade();
+			endTrade(slPNL);
 		}
 
 		// creates new entry for data
@@ -371,7 +380,7 @@ export default function Canvas() {
 			setData({});
 			setCount(0);
 			// removes trade and stops fastbackwarding
-			endTrade();
+			endTrade(0);
 			setBackwarding(false);
 		}
 	}, [count, data, endTrade, initialPrice]);
@@ -640,7 +649,7 @@ export default function Canvas() {
 		let deleteTimer: any;
 
 		if (fastForwarding) {
-			addTimer = setInterval(handleAdd, 0);
+			addTimer = setInterval(handleAdd, 250);
 		} else if (fastBackwarding) {
 			deleteTimer = setInterval(handleDelete, 250);
 		}
@@ -749,7 +758,7 @@ export default function Canvas() {
 					<div
 						className="w-7 h-6 bg-gray-950 absolute right-[-28px] border-2 border-yellow-500 flex items-center justify-center"
 						onClick={() => {
-							endTrade();
+							endTrade(tradePNL);
 							removeTP();
 							removeSL();
 						}}
