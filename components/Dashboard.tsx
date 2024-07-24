@@ -41,11 +41,11 @@ export default function Dashboard() {
 
 		updateElementColor(document.querySelector("span#account-balance")!, accountBalance, 10000);
 		updateElementColor(document.querySelector("span#pnl")!, pnl, 0);
-		updateElementColor(document.querySelector("span#winrate")!, pnl, 50);
+		updateElementColor(document.querySelector("span#winrate")!, winrate, 50);
 	});
 
 	return (
-		<div className="w-8/12 h-[660px] bg-gray-900 mx-auto border-2 border-white rounded-2xl pt-5 px-12 mt-20">
+		<div className="w-8/12 h-[660px] bg-primary mx-auto border-2 border-secondary rounded-2xl pt-5 px-12 mt-20">
 			<h2 className="text-white text-3xl">Trader&apos;s Dashboard</h2>
 			<div className="h-5/6 text-xl text-white mt-5 text-left flex flex-col gap-6">
 				<p>
@@ -67,10 +67,7 @@ export default function Dashboard() {
 					</span>
 				</p>
 				<p>
-					Winrate:{" "}
-					<span id="winrate" style={{ color: "gray" }}>
-						{winrate.toFixed(2)}%
-					</span>
+					Winrate: <span id="winrate">{winrate.toFixed(2)}%</span>
 				</p>
 				<p>
 					Units:{" "}

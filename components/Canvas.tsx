@@ -519,6 +519,8 @@ export default function Canvas() {
 
 		// aligns all relevant UI to the canvas when window is resized
 		const handleResizing = () => {
+			verticalLine.style.top = `${canvas.getBoundingClientRect().top + window.scrollY}px`;
+			// verticalLine.style.height = `${canvas.offsetHeight}px`;
 			tradeButtonsRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
 			tradeLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
 			tpLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
@@ -662,7 +664,7 @@ export default function Canvas() {
 
 	return (
 		<>
-			<div ref={tradeButtonsRef} className="absolute left-8 mt-2 w-72 h-12 hidden gap-3 justify-center items-center">
+			<div ref={tradeButtonsRef} className="absolute ml-3 mt-3 w-72 h-12 hidden gap-3 justify-center items-center">
 				<button
 					className="z-50 w-24 h-9 bg-green-500 rounded-lg text-white font-bold left-16"
 					onClick={() => {
@@ -821,15 +823,15 @@ export default function Canvas() {
 			</div>
 			<div
 				ref={verticalLineRef}
-				className="absolute h-[600px] top-[120px] border-l-2 border-dotted border-white pointer-events-none"
+				className="absolute h-[750px] top-[138px] border-l-2 border-dotted border-white pointer-events-none"
 				style={{ display: "none", userSelect: "none" }}
 			>
 				<div ref={xAxisRef} className="z-10 absolute h-12 w-24 bottom-0 left-[-48px] bg-gray-500 flex justify-center items-center text-white">
 					{currentDate.toDateString()}
 				</div>
 			</div>
-			<canvas ref={canvasRef} className="w-11/12 h-[600px] bg-gray-900 mx-auto border-2 border-white cursor-crosshair"></canvas>
-			<div className="flex justify-center items-center gap-4 md:gap-6 mx-auto bg-gray-900 w-10/12 sm:w-2/4 md:w-[450px] h-20 my-8 rounded-2xl border-2 border-white">
+			<canvas ref={canvasRef} className="w-11/12 h-[750px] bg-primary mx-auto cursor-crosshair border-2 border-secondary"></canvas>
+			<div className="flex justify-center items-center relative gap-4 md:gap-6 mx-auto bg-primary w-10/12 sm:w-2/4 md:w-[450px] h-20 -mt-32 mb-36 rounded-2xl border-2 border-secondary">
 				<Image
 					className="w-10 md:w-[50px] mx-4 md:mx-8 cursor-pointer"
 					src="/fastbackward-icon.png"
