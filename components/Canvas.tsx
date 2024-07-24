@@ -831,7 +831,8 @@ export default function Canvas() {
 				</div>
 			</div>
 			<canvas ref={canvasRef} className="w-11/12 h-[750px] bg-primary mx-auto cursor-crosshair border-2 border-secondary"></canvas>
-			<div className="flex justify-center items-center relative gap-4 md:gap-6 mx-auto bg-primary w-10/12 sm:w-2/4 md:w-[450px] h-20 -mt-32 mb-36 rounded-2xl border-2 border-secondary">
+			<div className="w-10 h-2 bg-white flex mx-auto -mt-36 mb-3 cursor-pointer z-50"></div>
+			<div className="flex justify-center items-center relative gap-4 md:gap-6 mx-auto bg-primary w-10/12 sm:w-2/4 md:w-[450px] h-20 mb-36 rounded-2xl border-2 border-secondary duration-100">
 				<Image
 					className="w-10 md:w-[50px] mx-4 md:mx-8 cursor-pointer"
 					src="/fastbackward-icon.png"
