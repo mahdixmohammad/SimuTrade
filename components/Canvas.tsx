@@ -397,6 +397,22 @@ export default function Canvas() {
 		}
 	};
 
+	const toggleControls = () => {
+		const playbackControls = document.querySelector(".playback-controls")!;
+		playbackControls.classList.toggle("invisible");
+		const hideControls = document.querySelector(".hide-controls")!;
+		const arrow1 = document.querySelector(".hide-controls div:nth-child(1)")!;
+		const arrow2 = document.querySelector(".hide-controls div:nth-child(2)")!;
+		arrow1.classList.toggle("-rotate-[135deg]");
+		arrow2.classList.toggle("rotate-[135deg]");
+		arrow1.classList.toggle("rotate-[-225deg]");
+		arrow2.classList.toggle("rotate-[225deg]");
+		// setTimeout(() => {
+		hideControls.classList.toggle("-mt-40");
+		hideControls.classList.toggle("-mt-20");
+		// }, 200);
+	};
+
 	// redraws the canvas anytime the state changes
 	useEffect(() => {
 		// uses setTimeout to ensure that variables load first
@@ -831,8 +847,14 @@ export default function Canvas() {
 				</div>
 			</div>
 			<canvas ref={canvasRef} className="w-11/12 h-[750px] bg-primary mx-auto cursor-crosshair border-2 border-secondary"></canvas>
-			<div className="w-10 h-2 bg-white flex mx-auto -mt-36 mb-3 cursor-pointer z-50"></div>
-			<div className="flex justify-center items-center relative gap-4 md:gap-6 mx-auto bg-primary w-10/12 sm:w-2/4 md:w-[450px] h-20 mb-36 rounded-2xl border-2 border-secondary duration-100">
+			<div
+				className="hide-controls w-fit h-5 flex items-center justify-center mx-auto relative -mt-40 mb-2 cursor-pointer z-50 duration-200"
+				onClick={toggleControls}
+			>
+				<div className="w-5 h-0.5 bg-white relative left-1 -rotate-[135deg] duration-200"></div>
+				<div className="w-5 h-0.5 bg-white relative right-1 rotate-[135deg] duration-200"></div>
+			</div>
+			<div className="playback-controls flex justify-center items-center relative gap-4 md:gap-6 mx-auto bg-primary w-10/12 sm:w-2/4 md:w-[450px] h-20 mb-36 rounded-2xl border-2 border-secondary duration-100">
 				<Image
 					className="w-10 md:w-[50px] mx-4 md:mx-8 cursor-pointer"
 					src="/fastbackward-icon.png"

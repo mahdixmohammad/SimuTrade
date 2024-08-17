@@ -10,6 +10,19 @@
 		background: rgb(29, 29, 29);
 		overflow-x: hidden;
 	}
+	nav ul li a {
+		padding: 2px 10px;
+		border-radius: 20px;
+		cursor: pointer;
+		transition: opacity 0.1s;
+	}
+	nav ul li a:not(.active):hover {
+		opacity: 0.8;
+	}
+	nav ul li a.active {
+		background: white;
+		color: black;
+	}
 	input::-webkit-outer-spin-button,
 	input::-webkit-inner-spin-button {
 		appearance: none;
