@@ -846,7 +846,7 @@ export default function Canvas() {
 					{currentDate.toDateString()}
 				</div>
 			</div>
-			<canvas ref={canvasRef} className="w-11/12 h-[750px] bg-primary mx-auto cursor-crosshair border-2 border-secondary"></canvas>
+			<canvas ref={canvasRef} className="w-11/12 h-[750px] mt-10 bg-primary mx-auto cursor-crosshair border-2 border-secondary"></canvas>
 			<div
 				className="hide-controls w-fit h-5 flex items-center justify-center mx-auto relative -mt-40 mb-2 cursor-pointer z-50 duration-200"
 				onClick={toggleControls}
