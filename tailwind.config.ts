@@ -5,10 +5,11 @@ const config: Config = {
 	theme: {
 		extend: {
 			borderColor: {
-				secondary: "rgb(50, 50, 50)",
+				secondary: "rgb(100, 100, 100)",
 			},
 			backgroundColor: {
-				primary: "rgb(20, 20, 20)",
+				primary: "rgb(25, 25, 25)",
+				tertiary: "rgb(195, 172, 28)",
 			},
 			fontFamily: {
 				custom: ["Poppins"],

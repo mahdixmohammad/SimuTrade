@@ -13,7 +13,7 @@ export default function Navbar() {
 	}, [path]);
 
 	return (
-		<nav className="bg-primary h-20 flex items-center justify-between px-20 text-white font-custom border-b-2 border-secondary">
+		<nav className="h-20 flex items-center justify-between px-20 text-white font-custom border-b-2 border-secondary">
 			<h1 className="text-4xl font-medium">SimuTrade</h1>
 			<ul className="flex gap-4 text-2xl">
 				<li>
