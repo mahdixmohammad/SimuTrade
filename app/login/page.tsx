@@ -8,7 +8,7 @@ export default function LoginPage() {
 				<form className="flex flex-col gap-4 text-center">
 					<input placeholder="Username" required className="w-[300px] px-2 py-2 rounded-xl"></input>
 					<input placeholder="Password" type="password" required className="px-2 py-2 rounded-xl"></input>
-					<button className="bg-tertiary py-2 rounded-xl font-custom">Log in</button>
+					<button className="bg-tertiary py-2 rounded-xl font-poppins">Log in</button>
 					<p className="text-white">
 						Or make a new account by <span className="cursor-pointer underline text-blue-400">signing up</span>
 					</p>

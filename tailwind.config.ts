@@ -4,15 +4,19 @@ const config: Config = {
 	content: ["./pages/**/*.{js,ts,jsx,tsx,mdx}", "./components/**/*.{js,ts,jsx,tsx,mdx}", "./app/**/*.{js,ts,jsx,tsx,mdx}"],
 	theme: {
 		extend: {
+			textColor: {
+				tertiary: "rgb(186, 162, 66)",
+			},
 			borderColor: {
-				secondary: "rgb(100, 100, 100)",
+				secondary: "rgb(60, 60, 60)",
 			},
 			backgroundColor: {
-				primary: "rgb(25, 25, 25)",
-				tertiary: "rgb(195, 172, 28)",
+				primary: "rgb(30, 30, 30)",
+				tertiary: "rgb(186, 162, 66)",
 			},
 			fontFamily: {
-				custom: ["Poppins"],
+				poppins: ["Poppins"],
+				kanit: ["Kanit"]
 			},
 		},
 	},

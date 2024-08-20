@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Kanit } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "./StoreProvider";
 import Navbar from "@/components/Navbar";
 
-const inter = Inter({ subsets: ["latin"] });
+const kanit = Kanit({ weight: ['400', '700'], style: ['normal', 'italic'], subsets: ["latin"] });
 
 export const metadata: Metadata = {
 	title: "SimuTrade",
@@ -19,7 +19,7 @@ export default function RootLayout({
 	return (
 		<StoreProvider>
 			<html lang="en">
-				<body className={inter.className}>
+				<body className={kanit.className}>
 					<Navbar />
 					{children}
 				</body>

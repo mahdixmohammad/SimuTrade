@@ -62,9 +62,9 @@ export default function Canvas() {
 	const [fastBackwarding, setBackwarding] = useState(false);
 
 	// state of canvas
-	const [scale, setScale] = useState(1);
+	const [scale, setScale] = useState(0.5);
 	const [isPanning, setIsPanning] = useState(false);
-	const [panOffset, setPanOffset] = useState({ x: 0, y: -priceToY(openingPrice + openingPrice / 30) });
+	const [panOffset, setPanOffset] = useState({ x: 500, y: -priceToY(openingPrice + openingPrice / 15) });
 	const [lastPanPosition, setLastPanPosition] = useState({ x: 0, y: 0 });
 
 	// state of trade
@@ -536,7 +536,8 @@ export default function Canvas() {
 		// aligns all relevant UI to the canvas when window is resized
 		const handleResizing = () => {
 			verticalLine.style.top = `${canvas.getBoundingClientRect().top + window.scrollY}px`;
-			// verticalLine.style.height = `${canvas.offsetHeight}px`;
+			verticalLine.style.height = `${canvas.offsetHeight}px`;
+			horizontalLine.style.width = `${canvas.offsetWidth}px`;
 			tradeButtonsRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
 			tradeLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
 			tpLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
@@ -679,8 +680,8 @@ export default function Canvas() {
 	}, [fastForwarding, fastBackwarding, handleAdd, handleDelete]);
 
 	return (
-		<>
-			<div ref={tradeButtonsRef} className="absolute ml-3 mt-3 w-72 h-12 hidden gap-3 justify-center items-center">
+		<div className="overflow-hidden">
+			<div ref={tradeButtonsRef} className="absolute ml-16 mt-20 w-72 h-12 hidden gap-3 justify-center items-center">
 				<button
 					className="z-50 w-24 h-9 bg-green-500 rounded-lg text-white font-bold left-16"
 					onClick={() => {
@@ -830,7 +831,7 @@ export default function Canvas() {
 			</div>
 			<div
 				ref={horizontalLineRef}
-				className="absolute w-11/12 left-[46px] border-t-2 border-dotted border-white pointer-events-none"
+				className="absolute w-11/12 border-t-2 border-dotted border-white pointer-events-none"
 				style={{ display: "none", userSelect: "none" }}
 			>
 				<div ref={yAxisRef} className="z-10 absolute h-12 w-24 top-[-24px] right-0 bg-gray-500 flex justify-center items-center text-white">
@@ -839,14 +840,14 @@ export default function Canvas() {
 			</div>
 			<div
 				ref={verticalLineRef}
-				className="absolute h-[750px] top-[138px] border-l-2 border-dotted border-white pointer-events-none"
+				className="absolute h-[750px] border-l-2 border-dotted border-white pointer-events-none"
 				style={{ display: "none", userSelect: "none" }}
 			>
 				<div ref={xAxisRef} className="z-10 absolute h-12 w-24 bottom-0 left-[-48px] bg-gray-500 flex justify-center items-center text-white">
 					{currentDate.toDateString()}
 				</div>
 			</div>
-			<canvas ref={canvasRef} className="w-11/12 h-[750px] mt-10 bg-primary mx-auto cursor-crosshair border-2 border-secondary"></canvas>
+			<canvas ref={canvasRef} className="w-screen h-screen bg-primary mx-auto cursor-crosshair"></canvas>
 			<div
 				className="hide-controls w-fit h-5 flex items-center justify-center mx-auto relative -mt-40 mb-2 cursor-pointer z-50 duration-200"
 				onClick={toggleControls}
@@ -927,6 +928,6 @@ export default function Canvas() {
 					}}
 				/>
 			</div>
-		</>
+		</div>
 	);
 }

@@ -46,7 +46,7 @@ export default function Dashboard() {
 
 	return (
 		<div className="w-8/12 h-[660px] bg-primary mx-auto border-2 border-secondary rounded-2xl pt-5 px-12 mt-20">
-			<h2 className="text-white text-3xl">Trader&apos;s Dashboard</h2>
+			<h2 className="text-white text-3xl text-center">Trader&apos;s Dashboard</h2>
 			<div className="h-5/6 text-xl text-white mt-5 text-left flex flex-col gap-6">
 				<p>
 					Account Balance: <span id="account-balance">${accountBalance.toFixed(2)}</span>
