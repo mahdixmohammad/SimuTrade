@@ -1,5 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
-@import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -28,29 +28,35 @@
 		object-fit: cover;
 	}
 	.typewriter {
-		overflow: hidden; /* Ensures the content is not revealed until the animation */
-		border-right: .15em solid white; /* The typwriter cursor */
-		white-space: nowrap; /* Keeps the content on a single line */
-		margin: 0 auto; /* Gives that scrolling effect as the typing happens */
-		animation: 
-		  typing 3.25s steps(25, end) alternate infinite,
-		  blink-caret .75s step-end infinite;
-	  }
-	  
-	  /* The typing effect */
-	  @keyframes typing {
-		0% { width: 0 }
-		15% { width: 0 }
-		70% { width: 95% }
-		100% { width: 95% }
-	  }
-	  
-	  /* The typewriter cursor effect */
-	  @keyframes blink-caret {
-		from, to { border-color: transparent }
-		50% { border-color: white; }
-	  }
-	  
+		overflow: hidden;
+		border-right: 0.15em solid white;
+		white-space: nowrap;
+		margin: 0 auto;
+		animation: typing 3.25s steps(25, end) alternate infinite, blink-caret 0.75s step-end infinite;
+	}
+	@keyframes typing {
+		0% {
+			width: 0;
+		}
+		15% {
+			width: 0;
+		}
+		70% {
+			width: 95%;
+		}
+		100% {
+			width: 95%;
+		}
+	}
+	@keyframes blink-caret {
+		from,
+		to {
+			border-color: transparent;
+		}
+		50% {
+			border-color: white;
+		}
+	}
 	input::-webkit-outer-spin-button,
 	input::-webkit-inner-spin-button {
 		appearance: none;

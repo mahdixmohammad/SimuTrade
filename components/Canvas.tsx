@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAppDispatch } from "@/lib/hooks";
 import Image from "next/image";
 import { changeDashboard } from "@/lib/slice";
+import Controls from "./Controls";
 
 export default function Canvas() {
 	// set React DOM references
@@ -480,7 +481,6 @@ export default function Canvas() {
 		// positions crosshairs to where the cursor moves
 		const handleLineMove = (e: any) => {
 			if (!slDragging) {
-				horizontalLine.style.left = `${canvas.getBoundingClientRect().left}px`;
 				horizontalLine.style.top = `${e.pageY}px`;
 				verticalLine.style.left = `${e.pageX}px`;
 				horizontalLine.style.display = "block";
@@ -532,22 +532,6 @@ export default function Canvas() {
 			horizontalLine.style.display = "none";
 			verticalLine.style.display = "none";
 		};
-
-		// aligns all relevant UI to the canvas when window is resized
-		const handleResizing = () => {
-			verticalLine.style.top = `${canvas.getBoundingClientRect().top + window.scrollY}px`;
-			verticalLine.style.height = `${canvas.offsetHeight}px`;
-			horizontalLine.style.width = `${canvas.offsetWidth}px`;
-			tradeButtonsRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
-			tradeLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
-			tpLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
-			tpLineMarkerRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
-			slLineRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
-			slLineMarkerRef.current!.style.left = `${canvas.getBoundingClientRect().left}px`;
-		};
-
-		// runs it when the page is initially loaded
-		handleResizing();
 
 		const handleTPDragStart = (e: any) => {
 			e.preventDefault();
@@ -606,9 +590,6 @@ export default function Canvas() {
 		canvas.addEventListener("mousemove", handleLineMove);
 		canvas.addEventListener("mouseleave", handleLineLeave);
 
-		// aligns all relevant UI with the canvas
-		window.addEventListener("resize", handleResizing);
-
 		// drag take profit functionality
 		tpLine.addEventListener("mousedown", handleTPDragStart);
 		canvas.addEventListener("mousemove", handleTPMove);
@@ -637,8 +618,6 @@ export default function Canvas() {
 
 			canvas.removeEventListener("mousemove", handleLineMove);
 			canvas.removeEventListener("mouseleave", handleLineLeave);
-
-			window.removeEventListener("resize", handleResizing);
 
 			tpLine.removeEventListener("mousedown", handleTPDragStart);
 			canvas.removeEventListener("mousemove", handleTPMove);
@@ -761,7 +740,7 @@ export default function Canvas() {
 			</div>
 			<div
 				ref={tradeLineRef}
-				className="z-10 absolute w-11/12 left-[46px] border-t-2 border-dotted border-yellow-500 pointer-events-none text-white"
+				className="z-10 absolute w-screen border-t-2 border-dotted border-yellow-500 pointer-events-none text-white"
 				style={{ display: "none" }}
 			>
 				<div className="z-10 absolute h-6 w-24 top-[-12px] right-48 bg-black flex justify-center items-center border-2 border-yellow-500 cursor-pointer pointer-events-auto">
@@ -789,12 +768,12 @@ export default function Canvas() {
 			</div>
 			<div
 				ref={tpLineMarkerRef}
-				className="z-10 absolute w-11/12 left-[46px] border-t-2 border-dotted border-green-500 opacity-50 pointer-events-none"
+				className="z-10 absolute w-screen border-t-2 border-dotted border-green-500 opacity-50 pointer-events-none"
 				style={{ display: "none" }}
 			></div>
 			<div
 				ref={tpLineRef}
-				className="z-10 absolute w-11/12 left-[46px] border-t-2 border-dotted border-green-500 cursor-pointer text-white"
+				className="z-10 absolute w-screen border-t-2 border-dotted border-green-500 cursor-pointer text-white"
 				style={{ visibility: "hidden" }}
 			>
 				<div className="z-10 absolute h-6 w-24 top-[-12px] right-48 bg-black flex justify-center items-center border-2 border-green-500 cursor-pointer pointer-events-auto">
@@ -810,12 +789,12 @@ export default function Canvas() {
 			</div>
 			<div
 				ref={slLineMarkerRef}
-				className="z-10 absolute w-11/12 left-[46px] border-t-2 border-dotted border-red-500 opacity-50 pointer-events-none"
+				className="z-10 absolute w-screen border-t-2 border-dotted border-red-500 opacity-50 pointer-events-none"
 				style={{ display: "none" }}
 			></div>
 			<div
 				ref={slLineRef}
-				className="z-10 absolute w-11/12 left-[46px] border-t-2 border-dotted border-red-500 cursor-pointer text-white"
+				className="z-10 absolute w-screen border-t-2 border-dotted border-red-500 cursor-pointer text-white"
 				style={{ visibility: "hidden" }}
 			>
 				<div className="z-10 absolute h-6 w-24 top-[-12px] right-48 bg-black flex justify-center items-center border-2 border-red-500 cursor-pointer pointer-events-auto">
@@ -831,7 +810,7 @@ export default function Canvas() {
 			</div>
 			<div
 				ref={horizontalLineRef}
-				className="absolute w-11/12 border-t-2 border-dotted border-white pointer-events-none"
+				className="absolute w-screen border-t-2 border-dotted border-white pointer-events-none"
 				style={{ display: "none", userSelect: "none" }}
 			>
 				<div ref={yAxisRef} className="z-10 absolute h-12 w-24 top-[-24px] right-0 bg-gray-500 flex justify-center items-center text-white">
@@ -840,7 +819,7 @@ export default function Canvas() {
 			</div>
 			<div
 				ref={verticalLineRef}
-				className="absolute h-[750px] border-l-2 border-dotted border-white pointer-events-none"
+				className="absolute h-screen border-l-2 border-dotted border-white pointer-events-none"
 				style={{ display: "none", userSelect: "none" }}
 			>
 				<div ref={xAxisRef} className="z-10 absolute h-12 w-24 bottom-0 left-[-48px] bg-gray-500 flex justify-center items-center text-white">
@@ -855,79 +834,14 @@ export default function Canvas() {
 				<div className="w-5 h-0.5 bg-white relative left-1 -rotate-[135deg] duration-200"></div>
 				<div className="w-5 h-0.5 bg-white relative right-1 rotate-[135deg] duration-200"></div>
 			</div>
-			<div className="playback-controls flex justify-center items-center relative gap-4 md:gap-6 mx-auto bg-primary w-10/12 sm:w-2/4 md:w-[450px] h-20 mb-36 rounded-2xl border-2 border-secondary duration-100">
-				<Image
-					className="w-10 md:w-[50px] mx-4 md:mx-8 cursor-pointer"
-					src="/fastbackward-icon.png"
-					alt="Fast Backward"
-					title="Fast Backward"
-					width={50}
-					height={0}
-					style={{ height: "auto" }}
-					onClick={() => {
-						setForwarding(false);
-						setBackwarding(true);
-					}}
-				/>
-				<Image
-					className="w-7 md:w-[35px] cursor-pointer"
-					src="/backward-icon.png"
-					alt="Backward"
-					title="Backward"
-					width={35}
-					height={0}
-					style={{ height: "auto" }}
-					onClick={handleDelete}
-				/>
-				{fastForwarding || fastBackwarding ? (
-					<Image
-						className="w-7 md:w-[35px] cursor-pointer"
-						src="/pause-icon.png"
-						alt="Pause"
-						title="Pause"
-						width={35}
-						height={0}
-						style={{ height: "auto" }}
-						onClick={() => {
-							setForwarding(false);
-							setBackwarding(false);
-						}}
-					></Image>
-				) : (
-					<Image
-						className="w-7 md:w-[35px] cursor-pointer"
-						src="/play-icon.png"
-						alt="Play"
-						title="Play"
-						width={35}
-						height={0}
-						style={{ height: "auto" }}
-					></Image>
-				)}
-				<Image
-					className="w-7 md:w-[35px] cursor-pointer"
-					src="/forward-icon.png"
-					alt="Forward"
-					title="Forward"
-					width={35}
-					height={0}
-					style={{ height: "auto" }}
-					onClick={handleAdd}
-				/>
-				<Image
-					className="w-10 md:w-[50px] mx-4 md:mx-8 cursor-pointer"
-					src="/fastforward-icon.png"
-					alt="Fast Forward"
-					title="Fast Forward"
-					width={50}
-					height={0}
-					style={{ height: "auto" }}
-					onClick={() => {
-						setForwarding(true);
-						setBackwarding(false);
-					}}
-				/>
-			</div>
+			<Controls
+				handleAdd={handleAdd}
+				handleDelete={handleDelete}
+				fastForwarding={fastForwarding}
+				fastBackwarding={fastBackwarding}
+				setForwarding={setForwarding}
+				setBackwarding={setBackwarding}
+			/>
 		</div>
 	);
 }

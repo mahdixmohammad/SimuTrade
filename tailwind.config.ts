@@ -9,6 +9,7 @@ const config: Config = {
 			},
 			borderColor: {
 				secondary: "rgb(60, 60, 60)",
+				tertiary: "rgb(186, 162, 66)",
 			},
 			backgroundColor: {
 				primary: "rgb(30, 30, 30)",
@@ -16,7 +17,10 @@ const config: Config = {
 			},
 			fontFamily: {
 				poppins: ["Poppins"],
-				kanit: ["Kanit"]
+				kanit: ["Kanit"],
+			},
+			outlineColor: {
+				tertiary: "rgb(186, 162, 66)",
 			},
 		},
 	},

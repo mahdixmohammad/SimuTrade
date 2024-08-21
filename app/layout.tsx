@@ -4,7 +4,7 @@ import "./globals.css";
 import StoreProvider from "./StoreProvider";
 import Navbar from "@/components/Navbar";
 
-const kanit = Kanit({ weight: ['400', '700'], style: ['normal', 'italic'], subsets: ["latin"] });
+const kanit = Kanit({ weight: ["400", "500", "600", "700"], style: ["normal", "italic"], subsets: ["latin"] });
 
 export const metadata: Metadata = {
 	title: "SimuTrade",
@@ -20,7 +20,7 @@ export default function RootLayout({
 		<StoreProvider>
 			<html lang="en">
 				<body className={kanit.className}>
-					<Navbar />
+					{/* <Navbar /> */}
 					{children}
 				</body>
 			</html>
