@@ -4,7 +4,7 @@ import Link from "next/link";
 export default function LoginPage() {
 	return (
 		<main className="w-screen h-screen">
-			<div className="w-[400px] h-[400px] text-black absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-5">
+			<div className="text-black absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-5">
 				<Link href="/">
 					<Image src="/simutrade-icon.png" width={35} height={35} alt="" />{" "}
 				</Link>
@@ -23,7 +23,11 @@ export default function LoginPage() {
 					></input>
 					<button className="bg-tertiary py-3 rounded-lg font-poppins">Log in</button>
 					<p>
-						Or make a new account by <span className="cursor-pointer underline text-blue-400">signing up</span>.
+						Or make a new account by{" "}
+						<Link href="/signup" className="cursor-pointer underline text-blue-400">
+							signing up
+						</Link>
+						.
 					</p>
 				</form>
 			</div>
