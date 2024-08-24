@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAppDispatch } from "@/lib/hooks";
-import Image from "next/image";
 import { changeDashboard } from "@/lib/slice";
 import Controls from "./Controls";
 
