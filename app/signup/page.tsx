@@ -1,10 +1,18 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 import { addUser } from "@/actions/action";
-import dbConnect from "@/lib/db";
 
-export default async function SignUpPage() {
-	await dbConnect();
+export default function SignUpPage() {
+	const [statusObject, setStatus] = useState({ status: 0, message: "" }); // State: -1 for error, 0 for neutral, 1 for success
+
+	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		const formData = new FormData(event.target as HTMLFormElement);
+		setStatus(await addUser(formData));
+	};
 
 	return (
 		<main className="w-screen h-screen relative">
@@ -13,7 +21,7 @@ export default async function SignUpPage() {
 					<Image src="/simutrade-icon.png" width={35} height={35} alt="" />{" "}
 				</Link>
 				<h3 className="text-3xl font-medium">Sign up to SimuTrade</h3>
-				<form action={addUser} className="flex flex-col gap-4 text-center">
+				<form onSubmit={handleSubmit} className="flex flex-col gap-4 text-center">
 					<div className="w-[325px] gap-4 flex">
 						<input
 							name="First Name"
@@ -47,15 +55,18 @@ export default async function SignUpPage() {
 						required
 						className="w-[325px] px-2 py-2 rounded-md border-[1px] border-gray-400 outline-tertiary hover:border-black duration-150"
 					></input>
-					{/* <input
+					<input
+						name="Confirm Password"
 						placeholder="Confirm Password"
 						type="password"
 						required
 						className="w-[325px] px-2 py-2 rounded-md border-[1px] border-gray-400 outline-tertiary hover:border-black duration-150"
-					></input> */}
+					></input>
 					<button type="submit" className="w-[325px] bg-tertiary py-2 rounded-lg font-poppins">
 						Sign up
 					</button>
+					{statusObject.status === 1 && <p className="w-[325px] text-green-500">Success! Accounted created.</p>}
+					{statusObject.status === -1 && <p className="w-[325px] text-red-500">Error! {statusObject.message}</p>}
 					<p>
 						Or{" "}
 						<Link href="/login" className="cursor-pointer underline text-blue-400">
