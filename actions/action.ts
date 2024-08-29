@@ -2,6 +2,8 @@
 
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
+import { createSession } from "@/lib/session";
+import { redirect } from "next/navigation";
 
 const addUser = async (user: FormData) => {
 	await dbConnect();
@@ -36,13 +38,14 @@ const getUser = async (user: FormData) => {
 	const username = user.get("Username");
 	const password = user.get("Password");
 
-	console.log(await User.find({ username, password }));
+	const userInfo = await User.find({ username, password });
 
-	if ((await User.find({ username, password })).length === 0) {
-		return { status: -1, message: "Account does not exist." };
+	if (userInfo.length === 0) {
+		return;
 	}
 
-	return { status: 1, message: "" };
+	await createSession(userInfo[0].id);
+	redirect("/dashboard");
 };
 
 export { addUser, getUser };

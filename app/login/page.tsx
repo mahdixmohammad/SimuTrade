@@ -11,7 +11,8 @@ export default function LoginPage() {
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const formData = new FormData(event.target as HTMLFormElement);
-		setStatus(await getUser(formData));
+		await getUser(formData);
+		setStatus({ status: -1, message: "Incorrect account information." });
 	};
 
 	return (
