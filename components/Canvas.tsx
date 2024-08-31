@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useAppDispatch } from "@/lib/hooks";
-import { changeDashboard } from "@/lib/slice";
 import Controls from "./Controls";
+import { updateUserDashboard } from "@/actions/action";
 
 export default function Canvas() {
 	// set React DOM references
@@ -104,9 +103,6 @@ export default function Canvas() {
 
 	// initializing y-axis data
 	const [currentPrice, setCurrentPrice] = useState(0);
-
-	// redux state management
-	const dispatch = useAppDispatch();
 
 	const drawCandlestick = useCallback(
 		(candlestick: Candlestick, index: number) => {
@@ -280,15 +276,8 @@ export default function Canvas() {
 		(finalPNL: number) => {
 			// reset trade state to default
 			tradeLineRef.current!.style.display = "none";
-			// dispatch action to change state of dashboard
-			dispatch(
-				changeDashboard({
-					pnl: finalPNL,
-					units: tradeSize,
-					tradeStartTimestamp: tradeStartDate.getTime(),
-					tradeEndTimestamp: data[count].date.getTime(),
-				})
-			);
+			// update user's dashboard in database
+			updateUserDashboard(finalPNL, tradeSize, tradeStartDate.getTime(), data[count].date.getTime());
 			removeTP();
 			removeSL();
 			setTradePrice(-1);
@@ -296,7 +285,7 @@ export default function Canvas() {
 			setTradePNL(0);
 			setTradeSize(1);
 		},
-		[count, data, dispatch, removeSL, removeTP, tradeSize, tradeStartDate]
+		[count, data, removeSL, removeTP, tradeSize, tradeStartDate]
 	);
 
 	const handleAdd = useCallback(() => {

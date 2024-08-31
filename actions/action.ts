@@ -58,15 +58,75 @@ const getUser = async () => {
 	await dbConnect();
 	const { isAuth, userId }: { isAuth: boolean; userId: string } = await verifySession();
 
+	// Check if user is authenticated
+	if (!isAuth) {
+		throw new Error("User not authenticated");
+	}
+
 	const id = new ObjectId(userId);
 
-	const user = await User.find({ _id: id });
+	// Use 'lean()' to get a plain JavaScript object
+	const user = await User.findOne({ _id: id }).lean();
 
-	return user;
+	// Ensure user exists
+	if (!user) {
+		throw new Error("User not found");
+	}
+
+	return user; // Return the plain object, ready to be serialized
 };
 
-const updateUserDashboard = async (userId: string) => {
+const updateUserDashboard = async (newPnl: number, newUnits: number, tradeStartTimestamp: number, tradeEndTimestamp: number) => {
 	await dbConnect();
+	const { isAuth, userId }: { isAuth: boolean; userId: string } = await verifySession();
+
+	const id = new ObjectId(userId);
+
+	const user = (await User.find({ _id: id }))[0];
+	const { dashboard } = user;
+	let { accountBalance, pnl, wins, losses, winrate, units, totalTradeDuration, averageWin, averageLoss, averageUnits, averageTradeDuration } =
+		dashboard;
+	console.log(dashboard);
+
+	accountBalance += newPnl;
+	pnl += newPnl;
+
+	if (newPnl > 0) {
+		averageWin = (averageWin * wins + newPnl) / (wins + 1);
+		wins += 1;
+	}
+	if (newPnl < 0) {
+		averageLoss = (averageLoss * losses + newPnl) / (losses + 1);
+		losses += 1;
+	}
+
+	winrate = (wins / (wins + losses)) * 100;
+	units += newUnits;
+	averageUnits = (averageUnits * (wins + losses - 1) + newUnits) / (wins + losses);
+	const tradeStartDate = new Date(tradeStartTimestamp);
+	const tradeEndDate = new Date(tradeEndTimestamp);
+	const tradeDurationDifference = Math.round((tradeEndDate.getTime() - tradeStartDate.getTime()) / (1000 * 3600));
+	totalTradeDuration += tradeDurationDifference;
+	averageTradeDuration = (averageTradeDuration * (wins + losses - 1) + tradeDurationDifference) / (wins + losses);
+
+	await User.updateOne(
+		{ _id: id },
+		{
+			dashboard: {
+				accountBalance,
+				pnl,
+				wins,
+				losses,
+				winrate,
+				units,
+				totalTradeDuration,
+				averageWin,
+				averageLoss,
+				averageUnits,
+				averageTradeDuration,
+			},
+		}
+	);
 };
 
 export { signup, login, getUser, updateUserDashboard };
