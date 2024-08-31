@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { getUser } from "@/actions/action";
+import { login } from "@/actions/action";
 
 export default function LoginPage() {
 	const [statusObject, setStatus] = useState({ status: 0, message: "" }); // State: -1 for error, 0 for neutral, 1 for success
@@ -11,7 +11,7 @@ export default function LoginPage() {
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const formData = new FormData(event.target as HTMLFormElement);
-		await getUser(formData);
+		await login(formData);
 		setStatus({ status: -1, message: "Incorrect account information." });
 	};
 

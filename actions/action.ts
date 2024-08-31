@@ -2,10 +2,11 @@
 
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
-import { createSession } from "@/lib/session";
+import { ObjectId } from "mongodb";
+import { createSession, verifySession } from "@/lib/session";
 import { redirect } from "next/navigation";
 
-const addUser = async (user: FormData) => {
+const signup = async (user: FormData) => {
 	await dbConnect();
 
 	const firstName = user.get("First Name");
@@ -24,15 +25,20 @@ const addUser = async (user: FormData) => {
 	}
 
 	const newUser = new User({ firstName, lastName, email, username, password });
+
 	try {
 		await newUser.save();
 	} catch (error: any) {
 		return { status: -1, message: error.message };
 	}
-	return { status: 1, message: "" };
+
+	const userInfo = await User.find({ username });
+
+	await createSession(userInfo[0].id);
+	redirect("/dashboard");
 };
 
-const getUser = async (user: FormData) => {
+const login = async (user: FormData) => {
 	await dbConnect();
 
 	const username = user.get("Username");
@@ -48,4 +54,19 @@ const getUser = async (user: FormData) => {
 	redirect("/dashboard");
 };
 
-export { addUser, getUser };
+const getUser = async () => {
+	await dbConnect();
+	const { isAuth, userId }: { isAuth: boolean; userId: string } = await verifySession();
+
+	const id = new ObjectId(userId);
+
+	const user = await User.find({ _id: id });
+
+	return user;
+};
+
+const updateUserDashboard = async (userId: string) => {
+	await dbConnect();
+};
+
+export { signup, login, getUser, updateUserDashboard };

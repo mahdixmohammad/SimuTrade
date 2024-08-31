@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { addUser } from "@/actions/action";
+import { signup } from "@/actions/action";
 
 export default function SignUpPage() {
 	const [statusObject, setStatus] = useState({ status: 0, message: "" }); // State: -1 for error, 0 for neutral, 1 for success
@@ -11,7 +11,8 @@ export default function SignUpPage() {
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const formData = new FormData(event.target as HTMLFormElement);
-		setStatus(await addUser(formData));
+		await signup(formData);
+		setStatus({ status: -1, message: "Error creating account." });
 	};
 
 	return (

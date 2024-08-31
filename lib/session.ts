@@ -33,3 +33,14 @@ export async function createSession(userId: string) {
 		path: "/",
 	});
 }
+
+export async function verifySession() {
+	const cookie = cookies().get("session")?.value;
+	const session: any = await decrypt(cookie);
+
+	if (!session?.userId) {
+		return { isAuth: false, userId: "" };
+	}
+
+	return { isAuth: true, userId: session!.userId };
+}

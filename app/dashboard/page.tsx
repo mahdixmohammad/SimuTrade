@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 
 export default function SimulationPage() {
 	return (
-		<main className="py-10 w-screen h-screen">
+		<main className="bg-primary py-20 w-screen">
 			<Navbar />
 			<Dashboard />
 		</main>
