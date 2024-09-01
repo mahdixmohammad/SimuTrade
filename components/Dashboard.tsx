@@ -37,7 +37,7 @@ export default function Dashboard() {
 		dashboard;
 
 	return (
-		<div className="w-8/12 h-[660px] text-white mx-auto pt-5 px-12 mt-6">
+		<div className="w-11/12 sm:w-8/12 text-white mx-auto pt-5 px-12 mt-6">
 			<h2 className="w-fit text-4xl text-center border-b-2 pb-1 mx-auto">{firstName}&apos;s Dashboard:</h2>
 			<div className="h-5/6 text-2xl mt-7 text-left flex flex-col gap-6">
 				<p>

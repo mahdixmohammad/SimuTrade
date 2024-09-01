@@ -35,7 +35,7 @@ export default function Navbar() {
 		>
 			<Link href="/" className="flex items-center gap-3">
 				<Image src="/simutrade-icon.png" width={35} height={35} alt="" />
-				<h1 className="text-4xl font-normal">SimuTrade</h1>
+				<h1 className="hidden sm:block text-4xl font-normal">SimuTrade</h1>
 			</Link>
 			{/* Hamburger icon (visible when menu is closed) */}
 			{!menuOpen && (

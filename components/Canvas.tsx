@@ -648,9 +648,9 @@ export default function Canvas() {
 
 	return (
 		<div className="overflow-hidden">
-			<div ref={tradeButtonsRef} className="absolute ml-16 mt-20 w-72 h-12 hidden gap-3 justify-center items-center">
+			<div ref={tradeButtonsRef} className="w-screen absolute lg:w-72 lg:ml-16 mt-20 h-12 hidden gap-3 justify-center items-center">
 				<button
-					className="z-50 w-24 h-9 bg-green-500 rounded-lg text-white font-bold left-16"
+					className="w-24 h-9 bg-green-500 rounded-lg text-white font-bold left-16"
 					onClick={() => {
 						if (Number(tradeSizeRef.current!.value) >= 0.1 && Number(tradeSizeRef.current!.value) <= 999.9) {
 							// positioning the TP arrow above the trade line
@@ -694,7 +694,7 @@ export default function Canvas() {
 					onKeyUp={handleInput}
 				></input>
 				<button
-					className="z-50 w-24 h-9 bg-red-500 rounded-lg text-white font-bold left-44"
+					className="w-24 h-9 bg-red-500 rounded-lg text-white font-bold left-44"
 					onClick={() => {
 						if (Number(tradeSizeRef.current!.value) >= 0.1 && Number(tradeSizeRef.current!.value) <= 999.9) {
 							// positioning the TP arrow below the trade line
