@@ -13,6 +13,7 @@
 	nav.active {
 		position: fixed;
 		background: rgb(30, 30, 30) !important;
+		overflow: visible;
 	}
 	@media screen and (max-width: 1024px) {
 		nav ul {
@@ -24,7 +25,6 @@
 			font-size: 1.75rem;
 			background: rgba(30, 30, 30, 1);
 			top: 80px;
-			right: 0;
 			right: -100%;
 			text-align: center;
 			opacity: 1;

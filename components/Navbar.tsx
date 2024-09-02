@@ -31,7 +31,7 @@ export default function Navbar() {
 		<nav
 			className={`${
 				menuOpen ? `active` : ``
-			} z-50 w-screen h-20 absolute overflow-visible top-0 bg-transparent flex items-center justify-center px-20 text-white duration-500 lg:justify-between`}
+			} z-50 w-screen h-20 absolute top-0 bg-transparent overflow-hidden flex items-center justify-center px-20 text-white duration-500 lg:justify-between`}
 		>
 			<Link href="/" className="flex items-center gap-3">
 				<Image src="/simutrade-icon.png" width={35} height={35} alt="" />
