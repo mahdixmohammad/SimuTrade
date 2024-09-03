@@ -396,10 +396,8 @@ export default function Canvas() {
 		arrow2.classList.toggle("rotate-[135deg]");
 		arrow1.classList.toggle("rotate-[-225deg]");
 		arrow2.classList.toggle("rotate-[225deg]");
-		// setTimeout(() => {
-		hideControls.classList.toggle("-mt-40");
-		hideControls.classList.toggle("-mt-20");
-		// }, 200);
+		hideControls.classList.toggle("bottom-32");
+		hideControls.classList.toggle("bottom-40");
 	};
 
 	// redraws the canvas anytime the state changes
@@ -428,6 +426,12 @@ export default function Canvas() {
 		const tpLine: HTMLDivElement = tpLineRef.current!;
 		const slLine: HTMLDivElement = slLineRef.current!;
 
+		// Utility to get touch position
+		const getTouchPosition = (e: TouchEvent) => {
+			const touch = e.touches[0];
+			return { x: touch.clientX, y: touch.clientY };
+		};
+
 		const handleZoom = (event: WheelEvent) => {
 			event.preventDefault();
 
@@ -443,22 +447,28 @@ export default function Canvas() {
 			});
 		};
 
-		const handlePanStart = (event: MouseEvent) => {
+		const handlePanStart = (e: MouseEvent | TouchEvent) => {
+			e.preventDefault();
+
 			canvas.style.cursor = "grabbing";
 			setIsPanning(true);
-			setLastPanPosition({ x: event.clientX, y: event.clientY });
+			const position = e instanceof MouseEvent ? { x: e.clientX, y: e.clientY } : getTouchPosition(e);
+			setLastPanPosition(position);
 		};
 
-		const handlePanMove = (event: MouseEvent) => {
+		const handlePanMove = (e: MouseEvent | TouchEvent) => {
+			e.preventDefault();
+
 			if (!isPanning) return;
-			const deltaX = event.clientX - lastPanPosition.x;
-			const deltaY = event.clientY - lastPanPosition.y;
+			const position = e instanceof MouseEvent ? { x: e.clientX, y: e.clientY } : getTouchPosition(e);
+			const deltaX = position.x - lastPanPosition.x;
+			const deltaY = position.y - lastPanPosition.y;
 
 			setPanOffset(prevOffset => ({
 				x: prevOffset.x + deltaX / scale,
 				y: prevOffset.y + deltaY / scale,
 			}));
-			setLastPanPosition({ x: event.clientX, y: event.clientY });
+			setLastPanPosition(position);
 		};
 
 		const handlePanEnd = () => {
@@ -500,8 +510,8 @@ export default function Canvas() {
 				} else if (verticalLine.getBoundingClientRect().right >= canvas.getBoundingClientRect().right - 46) {
 					let xAxisRight = verticalLine.getBoundingClientRect().right - canvas.getBoundingClientRect().right;
 					xAxis.style.right = `${xAxisRight}px`;
-					xAxis.style.left = `initial`;
-				} else xAxis.style.left = `-48px`;
+					xAxis.style.left = "initial";
+				} else xAxis.style.left = "-48px";
 
 				// Prevent the y-axis div from overflowing off the canvas
 				if (horizontalLine.getBoundingClientRect().top <= canvas.getBoundingClientRect().top + 20) {
@@ -510,8 +520,8 @@ export default function Canvas() {
 				} else if (horizontalLine.getBoundingClientRect().bottom >= canvas.getBoundingClientRect().bottom - 72) {
 					let yAxisBottom = horizontalLine.getBoundingClientRect().bottom - canvas.getBoundingClientRect().bottom + 48;
 					yAxis.style.bottom = `${yAxisBottom}px`;
-					yAxis.style.top = `initial`;
-				} else yAxis.style.top = `-24px`;
+					yAxis.style.top = "initial";
+				} else yAxis.style.top = "-24px";
 			}
 		};
 
@@ -573,6 +583,9 @@ export default function Canvas() {
 		canvas.addEventListener("mousemove", handlePanMove);
 		canvas.addEventListener("mouseup", handlePanEnd);
 		canvas.addEventListener("mouseleave", handlePanEnd);
+		canvas.addEventListener("touchstart", handlePanStart);
+		canvas.addEventListener("touchmove", handlePanMove);
+		canvas.addEventListener("touchend", handlePanEnd);
 
 		// crosshair functionality
 		canvas.addEventListener("mousemove", handleLineMove);
@@ -603,6 +616,9 @@ export default function Canvas() {
 			canvas.removeEventListener("mousemove", handlePanMove);
 			canvas.removeEventListener("mouseup", handlePanEnd);
 			canvas.removeEventListener("mouseleave", handlePanEnd);
+			canvas.removeEventListener("touchstart", handlePanStart);
+			canvas.removeEventListener("touchmove", handlePanMove);
+			canvas.removeEventListener("touchend", handlePanEnd);
 
 			canvas.removeEventListener("mousemove", handleLineMove);
 			canvas.removeEventListener("mouseleave", handleLineLeave);
@@ -647,8 +663,8 @@ export default function Canvas() {
 	}, [fastForwarding, fastBackwarding, handleAdd, handleDelete]);
 
 	return (
-		<div className="overflow-hidden">
-			<div ref={tradeButtonsRef} className="w-screen absolute lg:w-72 lg:ml-16 mt-20 h-12 hidden gap-3 justify-center items-center">
+		<div>
+			<div ref={tradeButtonsRef} className="z-20 w-screen absolute lg:w-72 lg:ml-16 mt-20 h-12 hidden gap-3 justify-center items-center">
 				<button
 					className="w-24 h-9 bg-green-500 rounded-lg text-white font-bold left-16"
 					onClick={() => {
@@ -816,7 +832,7 @@ export default function Canvas() {
 			</div>
 			<canvas ref={canvasRef} className="w-screen h-screen bg-primary mx-auto cursor-crosshair"></canvas>
 			<div
-				className="hide-controls w-fit h-5 flex items-center justify-center mx-auto relative -mt-40 mb-2 cursor-pointer z-50 duration-200"
+				className="hide-controls z-10 w-fit h-5 flex items-center justify-center absolute bottom-40 left-0 right-0 mx-auto mb-2 cursor-pointer duration-200"
 				onClick={toggleControls}
 			>
 				<div className="w-5 h-0.5 bg-white relative left-1 -rotate-[135deg] duration-200"></div>

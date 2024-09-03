@@ -11,7 +11,7 @@ interface ControlsProps {
 
 export default function Controls({ fastForwarding, fastBackwarding, setForwarding, setBackwarding, handleAdd, handleDelete }: ControlsProps) {
 	return (
-		<div className="flex justify-center items-center relative gap-4 md:gap-6 mx-auto bg-primary w-10/12 sm:w-2/4 md:w-[450px] h-20 mb-36 rounded-2xl border-2 border-secondary duration-100">
+		<div className="playback-controls z-10 flex justify-center items-center absolute bottom-20 left-0 right-0 gap-4 md:gap-6 mx-auto bg-primary w-10/12 sm:w-2/4 md:w-[450px] h-20 rounded-2xl border-2 border-secondary duration-100">
 			<Image
 				className="w-10 md:w-[50px] mx-4 md:mx-8 cursor-pointer"
 				src="/fastbackward-icon.png"
