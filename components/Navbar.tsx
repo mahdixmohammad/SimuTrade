@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 export default function Navbar() {
 	const path = usePathname();
 	const [menuOpen, setMenuOpen] = useState(false); // State to track if the menu is open
+	const [isAuth, setIsAuth] = useState(false); // State to track authentication status
 
 	useEffect(() => {
 		const nav = document.querySelector("nav")!;
@@ -20,11 +21,38 @@ export default function Navbar() {
 
 		document.querySelector("nav ul li a.active")?.classList.remove("active");
 		document.querySelector("nav ul li a.\\" + path)!.classList.add("active");
+
+		// Fetch the authentication status
+		const fetchAuthStatus = async () => {
+			const res = await fetch("/api/session"); // Assuming you have a session API route
+			if (res.ok) {
+				const { isAuth } = await res.json();
+				setIsAuth(isAuth);
+			}
+		};
+
+		fetchAuthStatus();
 	}, [path]);
 
 	// Toggle the menuOpen state on hamburger or x click
 	const toggleMenu = () => {
 		setMenuOpen(!menuOpen);
+	};
+
+	const handleLogout = async () => {
+		try {
+			const res = await fetch("/api/logout", { method: "POST" });
+
+			if (res.ok) {
+				// Redirect to the login page or the home page after successful logout
+				window.location.href = "/login";
+			} else {
+				// Handle logout error if necessary
+				console.error("Logout failed", res);
+			}
+		} catch (error) {
+			console.error("An error occurred during logout:", error);
+		}
 	};
 
 	return (
@@ -55,23 +83,29 @@ export default function Navbar() {
 			<ul className="lg:gap-4 lg:text-2xl lg:flex">
 				<li>
 					<Link href="/" className="/">
-						Home
+						<span>Home</span>
 					</Link>
 				</li>
 				<li>
 					<Link href="/simulation" className="/simulation">
-						Simulation
+						<span>Simulation</span>
 					</Link>
 				</li>
 				<li>
 					<Link href="/dashboard" className="/dashboard">
-						Dashboard
+						<span>Dashboard</span>
 					</Link>
 				</li>
 				<li>
-					<Link href="/login" className="/login">
-						Log in
-					</Link>
+					{isAuth ? (
+						<button onClick={handleLogout} className="text-white bg-transparent border-none cursor-pointer">
+							Log out
+						</button>
+					) : (
+						<Link href="/login" className="/login">
+							<span>Log in</span>
+						</Link>
+					)}
 				</li>
 			</ul>
 		</nav>
